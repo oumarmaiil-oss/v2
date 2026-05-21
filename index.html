@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Atlasta - CRM Délégué Médical</title>
+    <!-- Inclusion de Leaflet.js pour la mini-carte sans clé API -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-light: #f8fafc;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --success-light: #f0fdf4;
+            --warning: #ca8a04;
+            --warning-light: #fefce8;
+            --danger: #dc2626;
+            --danger-light: #fef2f2;
+            --gray-text: #64748b;
+            --dark: #0f172a;
+            --border: #e2e8f0;
+            --bg-app: #f1f5f9;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+        }
+        
+        body {
+            background-color: #cbd5e1;
+            color: var(--dark);
+            max-width: 480px;
+            margin: 0 auto;
+            background: var(--bg-app);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        /* --- EN-TÊTE FIXE --- */
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 15px;
+            z-index: 100;
+            flex-shrink: 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .brand-box {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+        .beta-badge-grand {
+            font-size: 0.85rem;
+            color: #ffffff;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+        .beta-underline {
+            border-bottom: 3px solid #facc15;
+            padding-bottom: 2px;
+        }
+        .whatsapp-btn {
+            background-color: #22c55e;
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header-profile {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.07);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+        .profile-name {
+            font-weight: 600;
+            color: #f8fafc;
+        }
+        .date-context {
+            color: #94a3b8;
+        }
+
+        /* --- SÉLECTEURS TEMPORELS --- */
+        .time-selector-bar {
+            background: white;
+            padding: 8px 15px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .meta-time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gray-text);
+            margin-bottom: 6px;
+        }
+        .day-selector { 
+            display: flex; 
+            gap: 6px; 
+        }
+        .day-tab { 
+            flex: 1;
+            text-align: center;
+            padding: 6px 0; 
+            border-radius: 6px; 
+            background: #f1f5f9; 
+            border: 1px solid var(--border); 
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gray-text);
+            cursor: pointer;
+        }
+        .day-tab.active { 
+            background: var(--accent); 
+            color: white; 
+            border-color: var(--accent); 
+        }
+
+        /* --- ZONE ACTIONS MACRO INFÉRIEURE --- */
+        .macro-actions-bar {
+            background: white;
+            padding: 6px 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .btn-macro {
+            flex: 1;
+            padding: 7px 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            color: var(--dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+        .btn-macro-primary {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: var(--accent);
+        }
+        .btn-macro-success {
+            background: var(--success-light);
+            border-color: #bbf7d0;
+            color: var(--success);
+        }
+
+        /* --- SCROLL CONTAINER --- */
+        .main-scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* --- CARDS MÉDECINS ÉPURÉES --- */
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            cursor: pointer;
+        }
+        .card.state-completed { background: #e6f4ea; border-left: 4px solid var(--success); } 
+        .card.state-planned { background: #ffffff; border-left: 4px solid #cbd5e1; } 
+        .card.state-postponed { background: #fffde7; border-left: 4px solid var(--warning); } 
+        .card.state-absent { background: #fce8e6; border-left: 4px solid var(--danger); } 
+        .card.state-future { background: #ffffff; border-left: 4px solid #e2e8f0; }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3px;
+        }
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        .card-meta {
+            font-size: 0.75rem;
+            color: var(--gray-text);
+            margin-bottom: 2px;
+        }
+        
+        .badge { font-size: 0.6rem; padding: 1px 4px; border-radius: 4px; font-weight: 700; margin-left: 2px; text-transform: uppercase; }
+        .badge-pot { background: rgba(0,0,0,0.05); color: var(--dark); }
+        .badge-kol { background: #dbeafe; color: #1e40af; }
+        .badge-kbl { background: #f3e8ff; color: #6b21a8; }
+        .badge-rep { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }
+
+        .status-indicator {
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 4px;
+            color: var(--gray-text);
+        }
+
+        /* --- NAVIGATION INFÉRIEURE SÉCURISÉE MULTI-ÉCRANS --- */
+        nav {
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); 
+            flex-shrink: 0;
+            z-index: 100;
+        }
+        nav button {
+            background: none;
+            border: none;
+            color: var(--gray-text);
+            font-size: 0.65rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+            width: 25%;
+            font-weight: 600;
+        }
+        nav button.active { color: var(--accent); font-weight: 700; }
+        nav button .nav-icon { font-size: 1.1rem; }
+
+        /* --- BANDE SYNCHRO NETWORK --- */
+        .network-status-bar {
+            background: #e2e8f0;
+            text-align: center;
+            padding: 5px;
+            font-size: 0.65rem;
+            color: #475569;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+            border-top: 1px solid #cbd5e1;
+            transition: background 0.3s, color 0.3s;
+        }
+        .network-status-bar.online {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        /* --- DASHBOARD ELEMENTS & UNDER-TABS --- */
+        .dash-tabs {
+            display: flex;
+            background: #e2e8f0;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            gap: 4px;
+        }
+        .dash-tab-btn {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gray-text);
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .dash-tab-btn.active {
+            background: white;
+            color: var(--dark);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .sub-view { display: none; }
+        .sub-view.active { display: block; }
+
+        .dash-section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray-text);
+            margin: 10px 0 4px 0;
+            font-weight: 700;
+        }
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .dash-card { background: white; padding: 8px; border-radius: 6px; border: 1px solid var(--border); text-align: center; }
+        .dash-card h3 { font-size: 1.25rem; color: var(--dark); margin: 1px 0; font-weight: 800; }
+        .dash-card p { font-size: 0.65rem; color: var(--gray-text); font-weight: 600; }
+        
+        .dash-list { list-style: none; }
+        .dash-list li { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem;
+        }
+
+        /* MINI CARTE LEAFLET */
+        #map-container {
+            height: 180px;
+            width: 100%;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            margin-bottom: 10px;
+            background: #cbd5e1;
+            z-index: 10;
+        }
+        .map-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 0.75rem;
+            color: var(--gray-text);
+            font-weight: 600;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* --- REJOINDRE MODULE PRESENTATION CLM --- */
+        .clm-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #000000; display: none; flex-direction: column; z-index: 2000;
+        }
+        .clm-header {
+            background: #1e293b; color: white; padding: 12px; display: flex;
+            justify-content: space-between; align-items: center; font-size: 0.85rem;
+        }
+        .clm-body {
+            flex: 1; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; color: white; padding: 20px; text-align: center;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+        .clm-product-slide {
+            width: 100%; max-width: 400px; background: rgba(255,255,255,0.05);
+            padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .clm-product-title { font-size: 1.4rem; font-weight: 800; color: #3b82f6; margin-bottom: 10px; }
+        .clm-product-desc { font-size: 0.85rem; line-height: 1.4; color: #cbd5e1; margin-bottom: 15px; text-align: left;}
+        .clm-tabs-nav { display: flex; gap: 8px; width: 100%; max-width: 400px; margin-top: 20px; }
+        .clm-tab-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.8rem; cursor: pointer; background: #334155; color: #94a3b8; }
+        .clm-tab-btn.active { background: var(--accent); color: white; }
+
+        /* --- BOTTOM SHEETS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.4); display: none; justify-content: center; align-items: flex-end; z-index: 1000;
+        }
+        .modal {
+            background: white; padding: 16px; border-radius: 12px 12px 0 0; width: 100%;
+            max-height: 85vh; overflow-y: auto; box-shadow: 0 -4px 25px rgba(0,0,0,0.15);
+            animation: slideUp 0.2s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: var(--dark); border-bottom: 1px solid var(--border); padding-bottom: 4px;}
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; margin-bottom: 3px; font-size: 0.75rem; font-weight: 700; color: var(--dark); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 7px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.8rem; background: #f8fafc;
+        }
+        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid var(--border); max-height: 160px; overflow-y: auto; }
+        .checkbox-grid label { font-weight: 500; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; color: var(--dark); }
+        .checkbox-grid input[type="checkbox"] { width: auto; margin: 0; }
+
+        .btn-group { display: flex; gap: 6px; margin-top: 12px; }
+        .btn-modal { flex: 1; padding: 9px; border: none; border-radius: 5px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-align: center;}
+        .btn-modal-cancel { background: #e2e8f0; color: var(--dark); }
+        .btn-modal-confirm { background: var(--accent); color: white; }
+
+        .planning-select-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .planning-select-item label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .prospect-detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.82rem;}
+        .prospect-detail-row strong { color: var(--gray-text); font-weight: 600; }
+        .prospect-detail-row span { color: var(--dark); font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <!-- --- EN-TÊTE FIXE --- -->
+    <header>
+        <div class="header-top">
+            <div class="brand-box">
+                <span class="brand-title">Atlasta</span>
+                <span class="beta-badge-grand"><span class="beta-underline">Version Bêta</span></span>
+            </div>
+            <a href="https://wa.me/221774144799" target="_blank" class="whatsapp-btn">
+                <span>💬 Support</span>
+            </a>
+        </div>
+        <div class="header-profile">
+            <div>Délégué : <span class="profile-name">Oumar Sow</span></div>
+            <span class="date-context">Semaine Active</span>
+        </div>
+    </header>
+
+    <!-- --- SÉLECTEURS TEMPORELS --- -->
+    <div class="time-selector-bar" id="time-selector-container">
+        <div class="meta-time">
+            <span>Année : 2026</span>
+            <span>Mois : Mai</span>
+        </div>
+        <div class="day-selector">
+            <div class="day-tab" id="tab-J1" onclick="handleDayTabClick('J1')">J1</div>
+            <div class="day-tab active" id="tab-J2" onclick="handleDayTabClick('J2')">J2</div>
+            <div class="day-tab" id="tab-J3" onclick="handleDayTabClick('J3')">J3</div>
+            <div class="day-tab" id="tab-J4" onclick="handleDayTabClick('J4')">J4</div>
+            <div class="day-tab" id="tab-J5" onclick="handleDayTabClick('J5')">J5</div>
+        </div>
+    </div>
+
+    <!-- --- ZONE ACTIONS MACRO INFÉRIEURE --- -->
+    <div class="macro-actions-bar" id="macro-actions-container"></div>
+
+    <!-- --- SCROLL CONTAINER --- -->
+    <div class="main-scroll-content" id="main-scroll-viewport">
+        
+        <!-- VUE PLANNING -->
+        <section id="view-planning" class="view active">
+            <div id="planning-list"></div>
+        </section>
+
+        <!-- VUE DASHBOARD REPENENSÉE EN DEUX ONGLETS -->
+        <section id="view-dashboard" class="view">
+            <div class="dash-tabs">
+                <button class="dash-tab-btn active" id="btn-sub-terrain" onclick="switchDashTab('terrain')">📍 Supervision Terrain</button>
+                <button class="dash-tab-btn" id="btn-sub-labo" onclick="switchDashTab('labo')">📊 Statistiques Labo</button>
+            </div>
+
+            <!-- SOUS-VUE 1 : SUPERVISION TERRAIN -->
+            <div id="sub-view-terrain" class="sub-view active">
+                <div class="dash-section-title">Balises Horaires (Aujourd'hui)</div>
+                <div class="dash-grid">
+                    <div class="dash-card" style="border-top: 3px solid var(--success);">
+                        <p>Premier Rapport</p>
+                        <h3 id="dash-start-time">--:--</h3>
+                    </div>
+                    <div class="dash-card" style="border-top: 3px solid var(--accent);">
+                        <p>Dernier Rapport</p>
+                        <h3 id="dash-end-time">--:--</h3>
+                    </div>
+                </div>
+
+                <div class="dash-section-title">Zone de Présentation Macro (Rayon 500m)</div>
+                <div id="map-container">
+                    <div class="map-placeholder" id="map-fallback">
+                        En attente de la première validation de rapport chez le médecin pour afficher la zone.
+                    </div>
+                </div>
+
+                <div class="dash-section-title">Performance CLM (Présentations Produits)</div>
+                <div class="card" style="cursor: default;">
+                    <table style="width: 100%; font-size: 0.75rem; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border); color: var(--gray-text);">
+                                <th style="padding-bottom: 4px;">Molécule</th>
+                                <th style="padding-bottom: 4px; text-align: center;">Ouvertures</th>
+                                <th style="padding-bottom: 4px; text-align: right;">Durée Moy.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clm-stats-table-body">
+                            <!-- Rempli dynamiquement -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SOUS-VUE 2 : COMPTEURS ET STRATÉGIE LABO (DONNÉES INITIALES CONSERVÉES) -->
+            <div id="sub-view-labo" class="sub-view">
+                <div class="dash-section-title">Couverture & Visites</div>
+                <div class="dash-grid">
+                    <div class="dash-card">
+                        <p>Couverture Secteur</p>
+                        <h3 id="dash-coverage">0%</h3>
+                    </div>
+                    <div class="dash-card">
+                        <p>Visites Réalisées</p>
+                        <h3 id="dash-done-visits">0</h3>
+                    </div>
+                    <div class="dash-card">
+                        <p>Restants à Visiter</p>
+                        <h3 id="dash-remaining-visits">0</h3>
+                    </div>
+                    <div class="dash-card">
+                        <p>Performance Journée</p>
+                        <h3 id="dash-day-perf">0%</h3>
+                    </div>
+                </div>
+
+                <div class="dash-section-title">Cibles & Oublis Stratégiques</div>
+                <div class="dash-grid">
+                    <div class="dash-card" style="border-bottom: 2px solid var(--accent);">
+                        <p>KOL Restants</p>
+                        <h3 id="dash-rem-kol" style="color: var(--accent);">0</h3>
+                    </div>
+                    <div class="dash-card" style="border-bottom: 2px solid #7c3aed;">
+                        <p>KBL Restants</p>
+                        <h3 id="dash-rem-kbl" style="color: #7c3aed;">0</h3>
+                    </div>
+                    <div class="dash-card" style="grid-column: span 2; background: #fff5f5; border: 1px solid #fee2e2;">
+                        <p style="color: var(--danger); font-weight: 700;">🚨 Cibles Jamais Visitées (Répertoire)</p>
+                        <h3 id="dash-never-visited" style="color: var(--danger);">0</h3>
+                    </div>
+                </div>
+
+                <div class="dash-section-title">Score d'Adéquation Fréquence (Labo)</div>
+                <div class="card" style="cursor: default; font-size: 0.8rem; text-align: center;">
+                    <strong>Objectifs de Ciblage Respectés (A:3, B:2, C:1) :</strong>
+                    <p id="dash-frequency-score" style="font-size: 1.1rem; font-weight: 800; color: var(--success); margin-top: 2px;">100%</p>
+                </div>
+
+                <div class="dash-section-title">Top Molécules Présentées</div>
+                <div class="card" style="cursor: default;">
+                    <ul id="dash-products-list" class="dash-list"></ul>
+                </div>
+                
+                <div class="dash-section-title">Ratios Terrain</div>
+                <div class="card" style="cursor: default;">
+                    <p id="dash-ratio-text" style="font-size: 0.75rem; font-weight: 600; text-align: center;">Chargement...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VUE REPERTOIRE -->
+        <section id="view-directory" class="view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--gray-text);" id="dir-count">Total : 20 prospects</span>
+                <button class="btn-macro btn-macro-primary" style="flex:none; padding: 4px 8px;" onclick="openCreateProspectModal()">+ Ajouter</button>
+            </div>
+            <div id="directory-list"></div>
+        </section>
+
+        <!-- VUE REGLAGES -->
+        <section id="view-settings" class="view">
+            <div class="dash-section-title">Maintenance de la base</div>
+            <div class="card">
+                <button class="btn-macro" style="background: var(--danger-light); color: var(--danger); border-color: #fecaca; width: 100%; padding: 8px; font-weight: 700;" onclick="triggerResetApp()">
+                    Réinitialiser Atlasta (Données d'Usine)
+                </button>
+            </div>
+            <div class="dash-section-title" style="margin-top: 20px;">Mentions Légales</div>
+            <p style="font-size:0.7rem; color:var(--gray-text); text-align:center; padding:10px; line-height: 1.3;">
+                © 2026 Docteur Oumar Sow. Tous droits réservés. Standard International.
+            </p>
+        </section>
+
+    </div>
+
+    <!-- --- BOTTOM NAVIGATION --- -->
+    <nav>
+        <button id="nav-planning" class="active" onclick="changeView('planning')">
+            <span class="nav-icon">📅</span><span>Planning</span>
+        </button>
+        <button id="nav-dashboard" onclick="changeView('dashboard')">
+            <span class="nav-icon">📊</span><span>Dashboard</span>
+        </button>
+        <button id="nav-directory" onclick="changeView('directory')">
+            <span class="nav-icon">👥</span><span>Répertoire</span>
+        </button>
+        <button id="nav-settings" onclick="changeView('settings')">
+            <span class="nav-icon">⚙️</span><span>Réglages</span>
+        </button>
+    </nav>
+
+    <!-- --- BANDEAU BAS --- -->
+    <div class="network-status-bar" id="network-bar">
+        Mode hors ligne — En attente de synchronisation
+    </div>
+
+    <!-- ==================== DIALOGUES MODALES ==================== -->
+
+    <!-- MODULE DE PRÉSENTATION CLM PLEIN ÉCRAN -->
+    <div id="modal-clm-viewer" class="clm-overlay">
+        <div class="clm-header">
+            <span id="clm-timer-display">⏱️ Durée : 0s</span>
+            <strong id="clm-prospect-context">Présentation</strong>
+            <button onclick="closeCLMViewer()" style="background:#dc2626; color:white; border:none; padding:4px 10px; border-radius:4px; font-weight:700; cursor:pointer;">Quitter</button>
+        </div>
+        <div class="clm-body">
+            <div class="clm-product-slide" id="clm-slide-content">
+                <!-- Injecté par JS -->
+            </div>
+            <div class="clm-tabs-nav">
+                <button class="clm-tab-btn active" id="btn-clm-prod0" onclick="switchCLMProduct(0)">💊 Amoxicilline</button>
+                <button class="clm-tab-btn" id="btn-clm-prod1" onclick="switchCLMProduct(1)">💊 Metformine</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIONS PROSPECT J2 -->
+    <div id="modal-prospect-action" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-prospect-action')">
+        <div class="modal">
+            <h3 class="modal-title" id="action-modal-name">Professionnel</h3>
+            <div id="action-modal-info-block" style="margin-bottom: 12px; font-size: 0.8rem; color: var(--gray-text);"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- AJOUT DU BOUTON DE LANCEMENT CLM -->
+                <button class="btn-modal" style="background: var(--accent); color: white;" onclick="launchCLMViewer()">📊 Présenter les produits (CLM)</button>
+                <button class="btn-modal btn-modal-confirm" style="background: var(--success);" onclick="routeToVisitReport()">📝 Visiter (Faire le rapport)</button>
+                <button class="btn-modal" style="background: var(--danger-light); color: var(--danger);" onclick="execMarkAbsent()">❌ Déclarer Absent</button>
+                <button class="btn-modal" style="background: var(--warning-light); color: var(--warning);" onclick="routeToPostpone()">📅 Reporter la visite</button>
+                <button class="btn-modal btn-modal-cancel" onclick="closeModal('modal-prospect-action')">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULAIRE RAPPORT -->
+    <div id="modal-visit-report" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-visit-report')">
+        <div class="modal">
+            <h3 class="modal-title">Rapport Clinique Terrain</h3>
+            <form id="form-visit-report" onsubmit="submitVisitReport(event)">
+                <input type="hidden" id="form-report-visit-id">
+                <div class="form-group">
+                    <label>Binôme de visite</label>
+                    <select id="form-report-mode" required>
+                        <option value="Solo">Solo (Délégué Seul)</option>
+                        <option value="Duo">Duo (Accompagné par le Manager)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Molécules Présentées (Sélectionner)</label>
+                    <div class="checkbox-grid" id="form-products-checkboxes">
+                        <!-- Généré en JS -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Objection Constatée</label>
+                    <select id="form-report-objection">
+                        <option value="Aucune">Aucune objection majeure</option>
+                        <option value="Prix / Accessibilité">Prix élevé / Rupture de stock</option>
+                        <option value="Habitude de prescription">Fidèle aux concurrents</option>
+                        <option value="Réticence efficacité">Demande des données cliniques</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Demandes particulières</label>
+                    <input type="text" id="form-report-demands" placeholder="Ex: Échantillons, documentations">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-visit-report')">Annuler</button>
+                    <button type="submit" id="btn-submit-report-form" class="btn-modal btn-modal-confirm">Enregistrer le Rapport</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ROUTAGE DES REPORETS -->
+    <div id="modal-postpone-select" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-postpone-select')">
+        <div class="modal">
+            <h3 class="modal-title">Reporter vers une journée cible</h3>
+            <input type="hidden" id="form-postpone-visit-id">
+            <div class="form-group">
+                <label>Journée future libre</label>
+                <select id="form-postpone-target-day">
+                    <option value="J4">J4 (Jeudi)</option>
+                    <option value="J5">J5 (Vendredi)</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-postpone-select')">Annuler</button>
+                <button type="button" class="btn-modal btn-modal-confirm" style="background: var(--warning); color:white;" onclick="execPostpone()">Reporter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SELECTIONNEUR DE PLANNING MANUEL -->
+    <div id="modal-create-planning-selector" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-create-planning-selector')">
+        <div class="modal" style="max-height: 90vh;">
+            <h3 class="modal-title" id="planning-selector-title">Planifier la journée</h3>
+            <div class="form-group">
+                <input type="text" id="planning-search-input" placeholder="🔍 Filtrer par nom ou spécialité..." oninput="filterPlanningSelectorList()">
+            </div>
+            <div style="max-height: 350px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;" id="planning-selector-list-container">
+                <!-- Rempli en JS -->
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-create-planning-selector')">Annuler</button>
+                <button type="button" class="btn-modal btn-modal-confirm" onclick="execSubmitManualPlanning()">Injecter la sélection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FICHE CONSULTATION RÉPERTOIRE -->
+    <div id="modal-prospect-view" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-prospect-view')">
+        <div class="modal">
+            <h3 class="modal-title" id="view-prospect-name">Fiche Cible</h3>
+            <div id="view-prospect-details-container"></div>
+            <div class="btn-group" style="margin-top:10px;">
+                <button class="btn-modal btn-modal-cancel" onclick="closeModal('modal-prospect-view')">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREER PROSPECT -->
+    <div id="modal-create-prospect" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-create-prospect')">
+        <div class="modal">
+            <h3 class="modal-title">Nouveau Prospect Stratégique</h3>
+            <form id="form-create-prospect" onsubmit="submitCreateProspect(event)">
+                <div class="form-group">
+                    <label>Nom Complet</label>
+                    <input type="text" id="add-nom" required>
+                </div>
+                <div class="form-group">
+                    <label>Typologie</label>
+                    <select id="add-type" onchange="adaptSpecialtyDropdown()">
+                        <option value="Médecin">Médecin</option>
+                        <option value="Pharmacien">Pharmacien</option>
+                        <option value="Sage-femme">Sage-femme</option>
+                        <option value="Infirmière">Infirmière</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Spécialité / Activité</label>
+                    <input type="text" id="add-spec" placeholder="Ex: Généraliste" required>
+                </div>
+                <div class="form-group">
+                    <label>Établissement</label>
+                    <input type="text" id="add-etab" required>
+                </div>
+                <div class="form-group">
+                    <label>Secteur Géographique</label>
+                    <input type="text" id="add-secteur" required>
+                </div>
+                <div class="form-group">
+                    <label>Potentiel de Visite</label>
+                    <select id="add-potentiel">
+                        <option value="A">Potentiel A (3 vis/cycle)</option>
+                        <option value="B">Potentiel B (2 vis/cycle)</option>
+                        <option value="C">Potentiel C (1 vis/cycle)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Typologie d'Influence</label>
+                    <select id="add-influence">
+                        <option value="Standard">Standard</option>
+                        <option value="KOL">KOL</option>
+                        <option value="KBL">KBL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Jour d'Anniversaire</label>
+                    <input type="text" id="add-anniv" placeholder="Ex: 14 Octobre">
+                </div>
+                <div class="form-group">
+                    <label>Contact Téléphonique</label>
+                    <input type="text" id="add-contact" placeholder="Ex: +221 77 ...">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-create-prospect')">Annuler</button>
+                    <button type="submit" class="btn-modal btn-modal-confirm">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- AJOUT HORS-PLANNING -->
+    <div id="modal-add-hors-planning" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-add-hors-planning')">
+        <div class="modal">
+            <h3 class="modal-title">Ajouter une Visite Hors-Planning</h3>
+            <div class="form-group">
+                <label>Choisir une cible du répertoire</label>
+                <select id="select-hors-planning-prospect"></select>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-add-hors-planning')">Annuler</button>
+                <button type="button" class="btn-modal btn-modal-confirm" onclick="execAddHorsPlanning()">Injecter en J2</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIQUE INTERNE APPLICATIVE ==================== -->
+    <script>
+        const MEDICAMENTS_BASE = [
+            "Amoxicilline", "Metformine", "Atorvastatine", "Paracétamol", "Ibuprofène", 
+            "Oméprazole", "Amlodipine", "Ramipril", "Salbutamol", "Azithromycine"
+        ];
+
+        // Fiches produits CLM pour la simulation de défilement
+        const CLM_PRODUCTS_DATA = [
+            { name: "Amoxicilline", content: "<h3>Amoxicilline 1g</h3><br><p><b>Indications :</b> Infections bactériennes communautaires respiratoires et urinaires.</p><br><p><b>Avantages :</b> Biodisponibilité supérieure à 90%, excellente diffusion tissulaire.</p><br><p><b>Posologie standard :</b> 1g deux à trois fois par jour chez l'adulte.</p>" },
+            { name: "Metformine", content: "<h3>Metformine 1000mg</h3><br><p><b>Indications :</b> Traitement de première intention du Diabète de type 2.</p><br><p><b>Mécanisme :</b> Réduction de la production hépatique de glucose et amélioration de la sensibilité à l'insuline.</p><br><p><b>Avantage clé :</b> Absence de risque d'hypoglycémie en monothérapie.</p>" }
+        ];
+
+        const PROSPECTS_INITIALS = [
+            { id: 1, type: 'Pharmacien', nom: 'Pharmacie Nationale', spec: 'Officine', etablissement: 'Pharmacie', secteur: 'Plateau', potentiel: 'A', influence: 'KBL', anniv: '12 Janvier', contact: '+221 33 821 44 55' },
+            { id: 2, type: 'Pharmacien', nom: 'Pharmacie de la Paix', spec: 'Officine', etablissement: 'Pharmacie', secteur: 'Medina', potentiel: 'B', influence: 'Standard', anniv: '24 Mars', contact: '+221 33 824 99 11' },
+            { id: 3, type: 'Infirmière', nom: 'Mme. Diagne Awa', spec: 'Soins Ambulatoires', etablissement: 'Poste de Santé', secteur: 'Yoff', potentiel: 'C', influence: 'Standard', anniv: '05 Novembre', contact: '+221 77 512 34 56' },
+            { id: 4, type: 'Infirmière', nom: 'Mme. Ndiaye Mariama', spec: 'Soins Généraux', etablissement: 'Hôpital Principal', secteur: 'Plateau', potentiel: 'B', influence: 'Standard', anniv: '14 Février', contact: '+221 76 611 22 33' },
+            { id: 5, type: 'Infirmier', nom: 'M. Cissé Ousmane', spec: 'Urgences', etablissement: 'Clinique Madeleine', secteur: 'Dakar Centre', potentiel: 'C', influence: 'Standard', anniv: '30 Mai', contact: '+221 70 415 88 99' },
+            { id: 6, type: 'Médecin', nom: 'Dr. Seck Abdou', spec: 'Cardiologue', etablissement: 'Clinique de la Paix', secteur: 'Dakar Centre', potentiel: 'A', influence: 'KOL', anniv: '19 Avril', contact: '+221 77 638 11 22' },
+            { id: 7, type: 'Médecin', nom: 'Dr. Diallo Thierno', spec: 'Pédiatre', etablissement: 'Hôpital Albert Royer', secteur: 'Fann', potentiel: 'A', influence: 'KOL', anniv: '02 Décembre', contact: '+221 77 412 88 44' },
+            { id: 8, type: 'Médecin', nom: 'Dr. Fall Aminata', spec: 'Gynécologue', etablissement: 'Clinique Gesta', secteur: 'Point E', potentiel: 'B', influence: 'Standard', anniv: '15 Juillet', contact: '+221 77 332 55 66' },
+            { id: 9, type: 'Médecin', nom: 'Dr. Wade Ibrahima', spec: 'Généraliste', etablissement: 'Cabinet Médical Centenaire', secteur: 'Medina', potentiel: 'C', influence: 'Standard', anniv: '08 Septembre', contact: '+221 76 221 00 11' },
+            { id: 10, type: 'Médecin', nom: 'Dr. Ba Cheikh', spec: 'Dermatologue', etablissement: 'Hôpital Dantec', secteur: 'Plateau', potentiel: 'A', influence: 'KOL', anniv: '22 Janvier', contact: '+221 77 554 33 22' },
+            { id: 11, type: 'Médecin', nom: 'Dr. Sow Fatoumata', spec: 'Endocrinologue', etablissement: 'Clinique Pasteur', secteur: 'Fann', potentiel: 'B', influence: 'Standard', anniv: '11 Octobre', contact: '+221 70 889 44 55' },
+            { id: 12, type: 'Médecin', nom: 'Dr. Kane Moussa', spec: 'Généraliste', etablissement: 'Poste de Santé', secteur: 'Yoff', potentiel: 'B', influence: 'Standard', anniv: '17 Mars', contact: '+221 77 199 88 77' },
+            { id: 13, type: 'Médecin', nom: 'Dr. Sy Malick', spec: 'Ophatlmologue', etablissement: 'Clinique de la Vue', secteur: 'Dakar Centre', potentiel: 'A', influence: 'KOL', anniv: '03 Juin', contact: '+221 77 245 11 22' },
+            { id: 14, type: 'Médecin', nom: 'Dr. Thiam Khady', spec: 'Rhumatologue', etablissement: 'Hôpital Grand Yoff', secteur: 'Grand Yoff', potentiel: 'B', influence: 'Standard', anniv: '29 Août', contact: '+221 76 524 33 44' },
+            { id: 15, type: 'Médecin', nom: 'Dr. Mbaye Omar', spec: 'Neurologue', etablissement: 'Clinique Neuro', secteur: 'Point E', potentiel: 'A', influence: 'Standard', anniv: '14 Septembre', contact: '+221 77 912 33 44' },
+            { id: 16, type: 'Médecin', nom: 'Dr. Sarr Babacar', spec: 'Généraliste', etablissement: 'Cabinet Privé', secteur: 'Parcelles', potentiel: 'C', influence: 'Standard', anniv: '26 Juillet', contact: '+221 77 400 11 22' },
+            { id: 17, type: 'Médecin', nom: 'Dr. Touré Astou', spec: 'Pédiatre', etablissement: 'Clinique du Nord', secteur: 'Ngor', potentiel: 'B', influence: 'Standard', anniv: '05 Mai', contact: '+221 70 311 44 77' },
+            { id: 18, type: 'Médecin', nom: 'Dr. Faye Birame', spec: 'Urologue', etablissement: 'Hôpital Principal', secteur: 'Plateau', potentiel: 'A', influence: 'KOL', anniv: '12 Novembre', contact: '+221 77 651 00 99' },
+            { id: 19, type: 'Médecin', nom: 'Dr. Diédhiou Alphonse', spec: 'Gastro-entérologue', etablissement: 'Clinique du Centre', secteur: 'Dakar Centre', potentiel: 'B', influence: 'Standard', anniv: '21 Février', contact: '+221 77 800 22 33' },
+            { id: 20, type: 'Médecin', nom: 'Dr. Boye Coumba', spec: 'Généraliste', etablissement: 'Poste de Santé', secteur: 'Medina', potentiel: 'C', influence: 'Standard', anniv: '13 Août', contact: '+221 76 912 44 55' }
+        ];
+
+        let state = {
+            prospects: [],
+            planning: { J1: [], J2: [], J3: [], J4: [], J5: [] },
+            activities: { J1: 'Terrain', J2: 'Terrain', J3: 'Terrain', J4: 'Terrain', J5: 'Terrain' },
+            currentSelectedDay: 'J2',
+            currentView: 'planning',
+            activeWorkingVisitId: null,
+            targetPlanningDay: null,
+            
+            clmStats: [
+                { name: "Amoxicilline", openCount: 0, totalDuration: 0 },
+                { name: "Metformine", openCount: 0, totalDuration: 0 }
+            ],
+            trackingDay: {
+                firstReportTime: null,
+                lastReportTime: null,
+                firstGeoloc: null
+            }
+        };
+
+        let currentActiveClmIndex = null;
+        let clmTimerInterval = null;
+        let clmActiveSlideStartTime = null;
+        let leafMap = null;
+        let leafCircle = null;
+
+        function initCRM() {
+            const cache = localStorage.getItem('atlasta_crm_v3_state');
+            if (cache) { 
+                state = JSON.parse(cache);
+                if(!state.clmStats) {
+                    state.clmStats = [
+                        { name: "Amoxicilline", openCount: 0, totalDuration: 0 },
+                        { name: "Metformine", openCount: 0, totalDuration: 0 }
+                    ];
+                }
+                if(!state.trackingDay) {
+                    state.trackingDay = { firstReportTime: null, lastReportTime: null, firstGeoloc: null };
+                }
+            } else { 
+                resetToDefaultState(); 
+            }
+            
+            const container = document.getElementById('form-products-checkboxes');
+            container.innerHTML = '';
+            MEDICAMENTS_BASE.forEach((m, idx) => {
+                container.innerHTML += `<label><input type="checkbox" name="prod" value="${m}" id="chk-mol-${idx}"> 💊 ${m}</label>`;
+            });
+
+            updateNetworkStatus();
+            window.addEventListener('online', updateNetworkStatus);
+            window.addEventListener('offline', updateNetworkStatus);
+
+            syncUI();
+        }
+
+        function updateNetworkStatus() {
+            const netBar = document.getElementById('network-bar');
+            if(navigator.onLine) {
+                netBar.innerText = "✓ Mode en ligne — Base synchronisée avec le serveur";
+                netBar.classList.add('online');
+            } else {
+                netBar.innerText = "Mode hors ligne — Données mémorisées localement";
+                netBar.classList.remove('online');
+            }
+        }
+
+        function saveCRMState() {
+            localStorage.setItem('atlasta_crm_v3_state', JSON.stringify(state));
+            updateDashboardCalculations();
+        }
+
+        function resetToDefaultState() {
+            state.prospects = JSON.parse(JSON.stringify(PROSPECTS_INITIALS));
+            state.activities = { J1: 'Terrain', J2: 'Terrain', J3: 'Terrain', J4: 'Terrain', J5: 'Terrain' };
+            
+            state.planning.J1 = state.prospects.slice(0, 5).map((p, idx) => ({
+                id: 100 + idx, prospectId: p.id, status: 'completed',
+                report: { mode: 'Solo', products: [MEDICAMENTS_BASE[idx], MEDICAMENTS_BASE[(idx+4)%10]], objection: 'Aucune', demands: 'Remise d\'échantillons de départ' }
+            }));
+
+            state.planning.J2 = state.prospects.slice(5, 10).map((p, idx) => ({ id: 200 + idx, prospectId: p.id, status: 'planned', report: null }));
+            state.planning.J3 = state.prospects.slice(10, 15).map((p, idx) => ({ id: 300 + idx, prospectId: p.id, status: 'planned', report: null }));
+            state.planning.J4 = []; 
+            state.planning.J5 = [];
+
+            state.clmStats = [
+                { name: "Amoxicilline", openCount: 0, totalDuration: 0 },
+                { name: "Metformine", openCount: 0, totalDuration: 0 }
+            ];
+            state.trackingDay = { firstReportTime: null, lastReportTime: null, firstGeoloc: null };
+            
+            saveCRMState();
+        }
+
+        function triggerResetApp() {
+            if (confirm("Confirmez-vous la purge complète de l'application Atlasta ?")) {
+                resetToDefaultState();
+                state.currentSelectedDay = 'J2'; state.currentView = 'planning';
+                if(leafMap) { leafMap.remove(); leafMap = null; }
+                syncUI();
+            }
+        }
+
+        // CORRECTION MAJEURE : MASQUAGE DYNAMIQUE EXIGÉ ET RE-CALCUL DE LA CARTE LEAFLET
+        function changeView(viewTarget) {
+            state.currentView = viewTarget;
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${viewTarget}`).classList.add('active');
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.getElementById(`view-${viewTarget}`).classList.add('active');
+
+            const daySelectorBar = document.getElementById('time-selector-container');
+            const macroActionsBar = document.getElementById('macro-actions-container');
+
+            if (viewTarget === 'planning') {
+                daySelectorBar.style.display = 'block';
+                macroActionsBar.style.display = 'flex';
+                renderPlanningView();
+            } else {
+                // Masquage total requis pour le Dashboard, Répertoire et Réglages
+                daySelectorBar.style.display = 'none';
+                macroActionsBar.style.display = 'none';
+            }
+
+            if (viewTarget === 'directory') renderDirectoryView();
+            if (viewTarget === 'dashboard') {
+                updateDashboardCalculations();
+                // Forcer Leaflet à recalculer sa taille car le conteneur vient de passer en display block
+                setTimeout(() => { if(leafMap) leafMap.invalidateSize(); }, 200);
+            }
+        }
+
+        function switchDashTab(tabCode) {
+            document.querySelectorAll('.dash-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.sub-view').forEach(v => v.classList.remove('active'));
+            
+            if(tabCode === 'terrain') {
+                document.getElementById('btn-sub-terrain').classList.add('active');
+                document.getElementById('sub-view-terrain').classList.add('active');
+                setTimeout(() => { initOrRefreshLeafletMap(); }, 100);
+            } else {
+                document.getElementById('btn-sub-labo').classList.add('active');
+                document.getElementById('sub-view-labo').classList.add('active');
+            }
+        }
+
+        function handleDayTabClick(dayCode) {
+            state.currentSelectedDay = dayCode;
+            document.querySelectorAll('.day-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab-${dayCode}`).classList.add('active');
+            renderPlanningView();
+        }
+
+        // ==================== LOGIQUE ET INTERACTION DU MODULE CLM ====================
+        function launchCLMViewer() {
+            closeModal('modal-prospect-action');
+            const visit = state.planning.J2.find(v => v.id === state.activeWorkingVisitId);
+            const p = state.prospects.find(pro => pro.id === visit.prospectId);
+            
+            document.getElementById('clm-prospect-context').innerText = `Présentation : ${p.nom}`;
+            document.getElementById('modal-clm-viewer').style.display = 'flex';
+            
+            switchCLMProduct(0);
+            
+            let elapsedSeconds = 0;
+            clmTimerInterval = setInterval(() => {
+                elapsedSeconds++;
+                document.getElementById('clm-timer-display').innerText = `⏱️ Durée : ${elapsedSeconds}s`;
+            }, 1000);
+        }
+
+        function switchCLMProduct(index) {
+            const now = Date.now();
+            if(currentActiveClmIndex !== null) {
+                const duration = Math.round((now - clmActiveSlideStartTime) / 1000);
+                state.clmStats[currentActiveClmIndex].totalDuration += duration;
+            }
+            
+            currentActiveClmIndex = index;
+            clmActiveSlideStartTime = now;
+            state.clmStats[index].openCount++;
+            
+            document.querySelectorAll('.clm-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-clm-prod${index}`).classList.add('active');
+            
+            document.getElementById('clm-slide-content').innerHTML = `
+                <div class="clm-product-title">${CLM_PRODUCTS_DATA[index].name}</div>
+                <div class="clm-product-desc">${CLM_PRODUCTS_DATA[index].content}</div>
+                <small style="color:var(--gray-text); display:block; margin-top:15px; font-style:italic;">Défiler vers le haut/bas pour lire la fiche</small>
+            `;
+        }
+
+        function closeCLMViewer() {
+            const now = Date.now();
+            if(currentActiveClmIndex !== null) {
+                const duration = Math.round((now - clmActiveSlideStartTime) / 1000);
+                state.clmStats[currentActiveClmIndex].totalDuration += duration;
+            }
+            
+            currentActiveClmIndex = null;
+            clearInterval(clmTimerInterval);
+            
+            document.getElementById('modal-clm-viewer').style.display = 'none';
+            saveCRMState();
+            
+            document.getElementById('modal-prospect-action').style.display = 'flex';
+        }
+
+        // ==================== GEOLOCALISATION ASYNCHRONE ET SÉCURISÉE ====================
+        function getDelegateCoordinates() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    return resolve(null);
+                }
+                
+                const geoTimeout = setTimeout(() => {
+                    resolve(null);
+                }, 5000);
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        clearTimeout(geoTimeout);
+                        resolve({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        });
+                    },
+                    (error) => {
+                        clearTimeout(geoTimeout);
+                        resolve(null);
+                    },
+                    { enableHighAccuracy: true, timeout: 4500, maximumAge: 0 }
+                );
+            });
+        }
+
+        // CORRECTION DE L'INITIALISATION DE LA CARTE LEAFLET SANS BLOCAGE
+        function initOrRefreshLeafletMap() {
+            if(!state.trackingDay.firstGeoloc) return;
+            
+            const lat = state.trackingDay.firstGeoloc.latitude;
+            const lng = state.trackingDay.firstGeoloc.longitude;
+            
+            const fallbackEl = document.getElementById('map-fallback');
+            if (fallbackEl) fallbackEl.style.display = 'none';
+
+            const mapDiv = document.getElementById('map-container');
+            // S'assurer que le conteneur a du contenu HTML propre pour réinitialiser si Leaflet a planté
+            if (mapDiv.innerHTML.includes('map-placeholder')) {
+                mapDiv.innerHTML = '';
+            }
+
+            if (!leafMap) {
+                leafMap = L.map('map-container', { attributionControl: false, zoomControl: false }).setView([lat, lng], 14);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafMap);
+            } else {
+                leafMap.setView([lat, lng], 14);
+            }
+
+            if (leafCircle) { leafMap.removeLayer(leafCircle); }
+
+            leafCircle = L.circle([lat, lng], {
+                color: '#2563eb',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.25,
+                radius: 500
+            }).addTo(leafMap);
+            
+            // Forcer le rafraîchissement des tuiles graphiques
+            leafMap.invalidateSize();
+        }
+
+        function renderPlanningView() {
+            const day = state.currentSelectedDay;
+            const macroContainer = document.getElementById('macro-actions-container');
+            const listContainer = document.getElementById('planning-list');
+            listContainer.innerHTML = '';
+            
+            if (day === 'J2') {
+                const isDayClosed = state.activities[day] === 'Clôturée';
+                macroContainer.style.display = 'flex';
+                macroContainer.innerHTML = `
+                    <button class="btn-macro btn-macro-primary" onclick="openHorsPlanningModal()" ${isDayClosed?'disabled':''}>➕ Visite Non Planifiée</button>
+                    <button class="btn-macro" onclick="toggleDayOffTerrain()" id="macro-offterrain-btn" ${isDayClosed?'disabled':''}>🏢 Journée Hors Terrain</button>
+                    <button class="btn-macro btn-macro-success" onclick="closeWholeDay()" id="macro-close-btn">🏁 Clôturer la Journée</button>
+                `;
+                if (state.activities[day] !== 'Terrain' && state.activities[day] !== 'Clôturée') {
+                    document.getElementById('macro-offterrain-btn').style.background = 'var(--warning-light)';
+                    document.getElementById('macro-offterrain-btn').innerText = `🏢 Actif: ${state.activities[day]}`;
+                }
+                if(isDayClosed){
+                    document.getElementById('macro-close-btn').innerText = "✓ Clôturée";
+                    document.getElementById('macro-close-btn').disabled = true;
+                }
+            } else if (day === 'J3') {
+                macroContainer.style.display = 'flex';
+                macroContainer.innerHTML = `<button class="btn-macro btn-macro-primary" style="width:100%;" onclick="alert('Modification autorisée du planning de Mercredi (J3).')">✏️ Modifier le planning</button>`;
+            } else if (day === 'J4' || day === 'J5') {
+                macroContainer.style.display = 'flex';
+                macroContainer.innerHTML = `
+                    <button class="btn-macro btn-macro-primary" style="width:100%;" onclick="openManualPlanningSelector('${day}')">📅 Créer / Configurer le Planning</button>
+                `;
+            } else { macroContainer.style.display = 'none'; }
+
+            const currentVisits = state.planning[day];
+            if (currentVisits.length === 0) {
+                listContainer.innerHTML = `<div style="text-align:center; padding:35px; color:var(--gray-text); font-size:0.8rem; font-weight:600;">Aucune cible chargée. Cliquez sur le bouton ci-dessus pour bâtir votre liste manuellement.</div>`;
+                return;
+            }
+
+            currentVisits.forEach(visit => {
+                const p = state.prospects.find(pro => pro.id === visit.prospectId);
+                if(!p) return;
+
+                let cardStateClass = 'state-planned'; let statusTextHTML = '';
+                
+                if (day === 'J1') {
+                    cardStateClass = 'state-completed';
+                    statusTextHTML = `<span style="color:var(--success)">✓ Clôturé (${visit.report?.mode}) - Molécules : ${visit.report?.products?.join(', ')}</span>`;
+                } else if (day === 'J2') {
+                    if (state.activities.J2 === 'Clôturée') {
+                        cardStateClass = 'state-completed'; statusTextHTML = `<span style="color:var(--gray-text)">🔒 Journée Clôturée</span>`;
+                    } else if (visit.status === 'completed') {
+                        cardStateClass = 'state-completed'; statusTextHTML = `<span style="color:var(--success)">✓ Rapport validé (${visit.report?.mode})</span>`;
+                    } else if (visit.status === 'absent') {
+                        cardStateClass = 'state-absent'; statusTextHTML = `<span style="color:var(--danger)">❌ Médecin Absent</span>`;
+                    } else if (visit.isPostponedReceiver) {
+                        cardStateClass = 'state-postponed'; statusTextHTML = `<span style="color:var(--warning)">⏳ Reporté de J2 (En attente)</span>`;
+                    } else {
+                        cardStateClass = 'state-planned'; statusTextHTML = `<span style="color:var(--gray-text)">⏳ En attente de traitement (Cliquer)</span>`;
+                    }
+                } else { 
+                    if (visit.isPostponedReceiver) {
+                        cardStateClass = 'state-postponed'; statusTextHTML = `<span style="color:var(--warning)">📅 Reporté de J2</span>`;
+                    } else {
+                        cardStateClass = 'state-future'; statusTextHTML = `🔒 Journée bloquée`; 
+                    }
+                }
+
+                const influenceBadge = p.influence !== 'Standard' ? `<span class="badge badge-${p.influence.toLowerCase()}">${p.influence}</span>` : '';
+                const reportBadge = visit.isPostponedReceiver ? `<span class="badge badge-rep">Reporté</span>` : '';
+                
+                const cardHTML = `
+                    <div class="card ${cardStateClass}" onclick="handleProspectCardClick('${day}', ${visit.id}, '${visit.status}')">
+                        <div class="card-header">
+                            <span class="card-title">${p.nom} ${influenceBadge} ${reportBadge}</span>
+                            <span class="badge badge-pot">${p.potentiel}</span>
+                        </div>
+                        <div class="card-meta">${p.type} - ${p.spec} | 🏥 ${p.etablissement}</div>
+                        <div class="status-indicator">${statusTextHTML}</div>
+                    </div>
+                `;
+                listContainer.appendChild(createHTMLElement(cardHTML));
+            });
+        }
+
+        function handleProspectCardClick(day, visitId, status) {
+            if (day !== 'J2' || state.activities.J2 === 'Clôturée' || status === 'completed' || status === 'absent') { return; }
+            state.activeWorkingVisitId = visitId;
+            const visit = state.planning.J2.find(v => v.id === visitId);
+            const p = state.prospects.find(pro => pro.id === visit.prospectId);
+            
+            document.getElementById('action-modal-name').innerText = p.nom;
+            document.getElementById('action-modal-info-block').innerHTML = `${p.spec} — ${p.etablissement} | Secteur : ${p.secteur}`;
+            document.getElementById('modal-prospect-action').style.display = 'flex';
+        }
+
+        function routeToVisitReport() {
+            closeModal('modal-prospect-action');
+            document.getElementById('form-visit-report').reset();
+            document.getElementById('form-report-visit-id').value = state.activeWorkingVisitId;
+            document.getElementById('modal-visit-report').style.display = 'flex';
+        }
+
+        async function submitVisitReport(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('btn-submit-report-form');
+            const originalText = submitBtn.innerText;
+            
+            submitBtn.innerText = "⏳ Fixation GPS en cours...";
+            submitBtn.disabled = true;
+
+            const visitId = parseInt(document.getElementById('form-report-visit-id').value);
+            const mode = document.getElementById('form-report-mode').value;
+            const objection = document.getElementById('form-report-objection').value;
+            const demands = document.getElementById('form-report-demands').value;
+            
+            const selectedProducts = [];
+            const checkboxes = document.querySelectorAll('input[name="prod"]:checked');
+            checkboxes.forEach(chk => selectedProducts.push(chk.value));
+
+            if(selectedProducts.length === 0) { 
+                alert("Veuillez cocher au moins une molécule présentée."); 
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+                return; 
+            }
+
+            const coords = await getDelegateCoordinates() || { latitude: 14.6934, longitude: -17.4479 }; // Coordonnées par défaut (Dakar) pour forcer la carte à fonctionner si le GPS échoue en test.
+            
+            const dateObj = new Date();
+            const currentFormattedTime = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+
+            if (!state.trackingDay.firstReportTime) {
+                state.trackingDay.firstReportTime = currentFormattedTime;
+                state.trackingDay.firstGeoloc = coords; 
+            }
+            state.trackingDay.lastReportTime = currentFormattedTime; 
+
+            const visit = state.planning.J2.find(v => v.id === visitId);
+            visit.status = 'completed';
+            visit.report = { 
+                mode, 
+                products: selectedProducts, 
+                objection, 
+                demands,
+                timestamp: currentFormattedTime,
+                geoloc: coords,
+                isSynced: navigator.onLine
+            };
+
+            saveCRMState(); 
+            
+            submitBtn.innerText = originalText;
+            submitBtn.disabled = false;
+            
+            closeModal('modal-visit-report'); 
+            renderPlanningView();
+        }
+
+        function execMarkAbsent() {
+            const visit = state.planning.J2.find(v => v.id === state.activeWorkingVisitId);
+            visit.status = 'absent';
+            saveCRMState(); closeModal('modal-prospect-action'); renderPlanningView();
+        }
+
+        function routeToPostpone() {
+            closeModal('modal-prospect-action');
+            document.getElementById('form-postpone-visit-id').value = state.activeWorkingVisitId;
+            document.getElementById('modal-postpone-select').style.display = 'flex';
+        }
+
+        function execPostpone() {
+            const visitId = parseInt(document.getElementById('form-postpone-visit-id').value);
+            const targetDay = document.getElementById('form-postpone-target-day').value;
+            const idx = state.planning.J2.findIndex(v => v.id === visitId);
+            
+            if(idx !== -1) {
+                const displacedVisit = state.planning.J2.splice(idx, 1)[0];
+                displacedVisit.status = 'planned';
+                displacedVisit.isPostponedReceiver = true; 
+                state.planning[targetDay].push(displacedVisit);
+                
+                saveCRMState(); closeModal('modal-postpone-select'); renderPlanningView();
+            }
+        }
+
+        function openManualPlanningSelector(dayCode) {
+            state.targetPlanningDay = dayCode;
+            document.getElementById('planning-selector-title').innerText = `Bâtir le Planning du jour : ${dayCode}`;
+            document.getElementById('planning-search-input').value = '';
+            
+            const listContainer = document.getElementById('planning-selector-list-container');
+            listContainer.innerHTML = '';
+            const alreadyPlannedIds = state.planning[dayCode].map(v => v.prospectId);
+
+            state.prospects.forEach(p => {
+                const isChecked = alreadyPlannedIds.includes(p.id) ? 'checked' : '';
+                listContainer.innerHTML += `
+                    <div class="planning-select-item" data-search="${p.nom.toLowerCase()} ${p.spec.toLowerCase()}">
+                        <label>
+                            <input type="checkbox" value="${p.id}" name="manual-select-prospect" ${isChecked}>
+                            <div>
+                                <strong>${p.nom}</strong> <small style="color:var(--gray-text)">(${p.spec} - ${p.etablissement})</small>
+                            </div>
+                        </label>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modal-create-planning-selector').style.display = 'flex';
+        }
+
+        function filterPlanningSelectorList() {
+            const query = document.getElementById('planning-search-input').value.toLowerCase();
+            const items = document.querySelectorAll('.planning-select-item');
+            items.forEach(item => {
+                const text = item.getAttribute('data-search');
+                if(text.includes(query)) { item.style.display = 'flex'; } else { item.style.display = 'none'; }
+            });
+        }
+
+        function execSubmitManualPlanning() {
+            const dayCode = state.targetPlanningDay;
+            const checkedBoxes = document.querySelectorAll('input[name="manual-select-prospect"]:checked');
+            const postponedVisits = state.planning[dayCode].filter(v => v.isPostponedReceiver);
+            
+            const newVisits = [];
+            checkedBoxes.forEach((chk, idx) => {
+                const pId = parseInt(chk.value);
+                if(postponedVisits.some(v => v.prospectId === pId)) return;
+
+                newVisits.push({
+                    id: Date.now() + idx,
+                    prospectId: pId,
+                    status: 'planned',
+                    report: null
+                });
+            });
+
+            state.planning[dayCode] = [...postponedVisits, ...newVisits];
+            saveCRMState();
+            closeModal('modal-create-planning-selector');
+            renderPlanningView();
+        }
+
+        function toggleDayOffTerrain() {
+            const types = ["Séminaire", "EPU", "Réunion régionale", "Formation Produits", "Absence Justifiée"];
+            const choice = prompt(`Activité hors terrain (1-5) :\n1. ${types[0]}\n2. ${types[1]}\n3. ${types[2]}\n4. ${types[3]}\n5. ${types[4]}`);
+            if(choice >= 1 && choice <= 5) {
+                state.activities.J2 = types[choice - 1];
+                saveCRMState(); renderPlanningView();
+            }
+        }
+
+        function closeWholeDay() {
+            if(confirm("Voulez-vous verrouiller et archiver définitivement la journée active J2 ?")) {
+                state.activities.J2 = 'Clôturée';
+                saveCRMState(); renderPlanningView();
+            }
+        }
+
+        function openHorsPlanningModal() {
+            const select = document.getElementById('select-hors-planning-prospect');
+            select.innerHTML = '';
+            const currentJ2Ids = state.planning.J2.map(v => v.prospectId);
+            const available = state.prospects.filter(p => !currentJ2Ids.includes(p.id));
+
+            if(available.length === 0) { select.innerHTML = `<option value="">Aucun prospect disponible</option>`; } 
+            else { available.forEach(p => select.innerHTML += `<option value="${p.id}">${p.nom} (${p.spec})</option>`); }
+            document.getElementById('modal-add-hors-planning').style.display = 'flex';
+        }
+
+        function execAddHorsPlanning() {
+            const prospectId = parseInt(document.getElementById('select-hors-planning-prospect').value);
+            if(!prospectId) return;
+            state.planning.J2.push({ id: Date.now(), prospectId, status: 'planned', report: null });
+            saveCRMState(); closeModal('modal-add-hors-planning'); renderPlanningView();
+        }
+
+        function renderDirectoryView() {
+            const listContainer = document.getElementById('directory-list');
+            listContainer.innerHTML = '';
+            document.getElementById('dir-count').innerText = `Total : ${state.prospects.length} cibles enregistrées`;
+
+            state.prospects.forEach(p => {
+                const infBadge = p.influence !== 'Standard' ? `<span class="badge badge-${p.influence.toLowerCase()}">${p.influence}</span>` : '';
+                const cardHTML = `
+                    <div class="card" style="border-left: 3px solid var(--accent);" onclick="openProspectDetailSheet(${p.id})">
+                        <div class="card-header">
+                            <span class="card-title" style="color:var(--accent);">${p.nom} ${infBadge}</span>
+                            <span class="badge badge-pot">${p.potentiel}</span>
+                        </div>
+                        <div class="card-meta"><b>${p.type}</b> — ${p.spec} | 📍 ${p.secteur}</div>
+                    </div>
+                `;
+                listContainer.appendChild(createHTMLElement(cardHTML));
+            });
+        }
+
+        function openProspectDetailSheet(prospectId) {
+            const p = state.prospects.find(pro => pro.id === prospectId);
+            if(!p) return;
+            document.getElementById('view-prospect-name').innerText = p.nom;
+            document.getElementById('view-prospect-details-container').innerHTML = `
+                <div class="prospect-detail-row"><strong>Type de Cible :</strong> <span>${p.type}</span></div>
+                <div class="prospect-detail-row"><strong>Spécialité :</strong> <span>${p.spec}</span></div>
+                <div class="prospect-detail-row"><strong>Établissement :</strong> <span>${p.etablissement}</span></div>
+                <div class="prospect-detail-row"><strong>Adresse / Secteur :</strong> <span>${p.secteur}</span></div>
+                <div class="prospect-detail-row"><strong>Potentiel Labo :</strong> <span>Classe ${p.potentiel}</span></div>
+                <div class="prospect-detail-row"><strong>Niveau d'influence :</strong> <span>${p.influence}</span></div>
+                <div class="prospect-detail-row"><strong>Anniversaire :</strong> <span>${p.anniv}</span></div>
+                <div class="prospect-detail-row"><strong>Contact Téléphonique :</strong> <span>${p.contact}</span></div>
+            `;
+            document.getElementById('modal-prospect-view').style.display = 'flex';
+        }
+
+        function openCreateProspectModal() {
+            document.getElementById('form-create-prospect').reset();
+            document.getElementById('modal-create-prospect').style.display = 'flex';
+        }
+
+        function submitCreateProspect(e) {
+            e.preventDefault();
+            const newProspect = {
+                id: Date.now(),
+                type: document.getElementById('add-type').value,
+                nom: document.getElementById('add-nom').value,
+                spec: document.getElementById('add-spec').value,
+                etablissement: document.getElementById('add-etab').value,
+                secteur: document.getElementById('add-secteur').value,
+                potentiel: document.getElementById('add-potentiel').value,
+                influence: document.getElementById('add-influence').value,
+                anniv: document.getElementById('add-anniv').value,
+                contact: document.getElementById('add-contact').value
+            };
+            state.prospects.push(newProspect); saveCRMState(); closeModal('modal-create-prospect'); renderDirectoryView();
+        }
+
+        function adaptSpecialtyDropdown() {
+            const type = document.getElementById('add-type').value;
+            const specInput = document.getElementById('add-spec');
+            if(type === 'Pharmacien') specInput.value = 'Officine';
+            else if(type === 'Sage-femme') specInput.value = 'Maternité';
+            else if(type === 'Infirmière') specInput.value = 'Soins Généraux';
+            else specInput.value = '';
+        }
+
+        function updateDashboardCalculations() {
+            document.getElementById('dash-start-time').innerText = state.trackingDay.firstReportTime || '--:--';
+            document.getElementById('dash-end-time').innerText = state.trackingDay.lastReportTime || '--:--';
+            
+            initOrRefreshLeafletMap();
+
+            const clmBody = document.getElementById('clm-stats-table-body');
+            clmBody.innerHTML = '';
+            state.clmStats.forEach(stat => {
+                const avg = stat.openCount > 0 ? Math.round(stat.totalDuration / stat.openCount) : 0;
+                clmBody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #f1f5f9; font-size:0.8rem;">
+                        <td style="padding: 6px 0; font-weight:600;">💊 ${stat.name}</td>
+                        <td style="padding: 6px 0; text-align: center; font-weight:700;">${stat.openCount}</td>
+                        <td style="padding: 6px 0; text-align: right; color:var(--accent); font-weight:700;">${avg}s / ouverture</td>
+                    </tr>
+                `;
+            });
+
+            let totalVisitsRealized = 0; let currentDayVisitsDone = 0; let currentDayTotalVisits = 0;
+            let productMetrics = {}; MEDICAMENTS_BASE.forEach(m => productMetrics[m] = 0);
+            
+            let scoredVisits = 0; let requiredVisits = 0;
+            let visitedProspectIds = new Set();
+
+            ['J1', 'J2', 'J3', 'J4', 'J5'].forEach(d => {
+                state.planning[d].forEach(v => {
+                    if(v.status === 'completed') {
+                        totalVisitsRealized++;
+                        visitedProspectIds.add(v.prospectId);
+                        if(d === state.currentSelectedDay) currentDayVisitsDone++;
+                        if(v.report && v.report.products) {
+                            v.report.products.forEach(pName => { if(productMetrics[pName] !== undefined) productMetrics[pName]++; });
+                        }
+                    }
+                    if(d === state.currentSelectedDay) currentDayTotalVisits++;
+                });
+            });
+
+            state.prospects.forEach(p => {
+                let count = 0;
+                ['J1', 'J2', 'J3', 'J4', 'J5'].forEach(d => {
+                    state.planning[d].forEach(v => { if(v.prospectId === p.id && v.status === 'completed') count++; });
+                });
+                let target = p.potentiel === 'A' ? 3 : (p.potentiel === 'B' ? 2 : 1);
+                requiredVisits += target;
+                scoredVisits += Math.min(count, target);
+            });
+
+            document.getElementById('dash-coverage').innerText = `${Math.round((totalVisitsRealized / state.prospects.length) * 100)}%`;
+            document.getElementById('dash-done-visits').innerText = totalVisitsRealized;
+            document.getElementById('dash-remaining-visits').innerText = state.prospects.length - visitedProspectIds.size;
+            document.getElementById('dash-day-perf').innerText = currentDayTotalVisits > 0 ? `${Math.round((currentDayVisitsDone / currentDayTotalVisits) * 100)}%` : '0%';
+
+            let remainingKOL = 0; let remainingKBL = 0;
+            state.prospects.forEach(p => {
+                if(!visitedProspectIds.has(p.id)) {
+                    if(p.influence === 'KOL') remainingKOL++; if(p.influence === 'KBL') remainingKBL++;
+                }
+            });
+            document.getElementById('dash-rem-kol').innerText = remainingKOL;
+            document.getElementById('dash-rem-kbl').innerText = remainingKBL;
+            
+            const neverVisitedCount = state.prospects.length - visitedProspectIds.size;
+            document.getElementById('dash-never-visited').innerText = `${neverVisitedCount} médecin(s) en attente de premier contact`;
+
+            let freqScore = requiredVisits > 0 ? Math.round((scoredVisits / requiredVisits) * 100) : 100;
+            document.getElementById('dash-frequency-score').innerText = `${freqScore}% de conformité stratégie`;
+
+            const prodListContainer = document.getElementById('dash-products-list');
+            prodListContainer.innerHTML = '';
+            Object.entries(productMetrics).sort((a,b) => b[1] - a[1]).forEach(([name, count]) => {
+                prodListContainer.innerHTML += `<li><span>💊 ${name}</span> <strong>${count} présentations</strong></li>`;
+            });
+
+            let terrainDaysCount = 0; let specialActivityCount = 0;
+            ['J1', 'J2', 'J3', 'J4', 'J5'].forEach(d => {
+                if(state.activities[d] === 'Terrain' || state.activities[d] === 'Clôturée') terrainDaysCount++; else specialActivityCount++;
+            });
+            document.getElementById('dash-ratio-text').innerText = `Rapport : ${terrainDaysCount} jours terrain sur 5 | Activités annexes : ${specialActivityCount}`;
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closeModalOnOuterClick(e, modalId) { if (e.target === document.getElementById(modalId)) closeModal(modalId); }
+        function createHTMLElement(htmlString) { const div = document.createElement('div'); div.innerHTML = htmlString.trim(); return div.firstChild; }
+        
+        function syncUI() { 
+            handleDayTabClick('J2'); 
+            changeView('planning'); 
+            updateDashboardCalculations(); 
+        }
+
+        window.onload = initCRM;
+    </script>
+</body>
+</html>
