@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Atlasta - CRM Délégué Médical</title>
-    <!-- Inclusion de Leaflet.js pour la mini-carte sans clé API -->
+    <!-- Inclusion de Leaflet.js pour la mini-carte -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -71,18 +71,18 @@
             font-weight: 900;
             letter-spacing: -0.5px;
         }
-        .beta-badge-grand {
-            font-size: 0.85rem;
+        .beta-badge-pro {
+            background-color: #eab308;
             color: #ffffff;
-            font-weight: 800;
+            font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
             display: inline-block;
             margin-top: 2px;
-        }
-        .beta-underline {
-            border-bottom: 3px solid #facc15;
-            padding-bottom: 2px;
+            width: fit-content;
         }
         .whatsapp-btn {
             background-color: #22c55e;
@@ -107,11 +107,17 @@
             font-size: 0.8rem;
         }
         .profile-name {
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .profile-meta {
+            color: #94a3b8;
             font-weight: 600;
-            color: #f8fafc;
+            font-size: 0.75rem;
         }
         .date-context {
-            color: #94a3b8;
+            color: #e2e8f0;
+            font-weight: 700;
         }
 
         /* --- SÉLECTEURS TEMPORELS --- */
@@ -173,7 +179,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 2px;
+            gap: 4px;
         }
         .btn-macro-primary {
             background: #eff6ff;
@@ -196,26 +202,54 @@
         .view { display: none; }
         .view.active { display: block; }
 
-        /* --- CARDS MÉDECINS ÉPURÉES --- */
+        /* --- SWIPE CONTAINER DESIGN --- */
+        .swipe-wrapper {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #cbd5e1;
+            touch-action: pan-y;
+        }
+        .swipe-actions-right {
+            position: absolute;
+            top: 0; bottom: 0; display: flex; width: 140px; z-index: 1;
+            right: 0; justify-content: flex-end;
+        }
+        
+        .swipe-btn {
+            border: none; color: white; font-weight: 700; font-size: 0.75rem;
+            width: 70px; height: 100%; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 4px; cursor: pointer;
+        }
+
+        /* --- CARDS HCP --- */
         .card {
             background: white;
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 10px 12px;
-            margin-bottom: 8px;
+            padding: 12px;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-            cursor: pointer;
         }
-        .card.state-completed { background: #e6f4ea; border-left: 4px solid var(--success); } 
-        .card.state-planned { background: #ffffff; border-left: 4px solid #cbd5e1; } 
-        .card.state-postponed { background: #fffde7; border-left: 4px solid var(--warning); } 
-        .card.state-absent { background: #fce8e6; border-left: 4px solid var(--danger); } 
-        .card.state-future { background: #ffffff; border-left: 4px solid #e2e8f0; }
+        .card.state-completed { border-left: 4px solid var(--success); } 
+        .card.state-planned { border-left: 4px solid #cbd5e1; } 
+        .card.state-postponed { border-left: 4px solid var(--warning); } 
+        .card.state-absent { border-left: 4px solid var(--danger); } 
+        .card.state-future { border-left: 4px solid #e2e8f0; }
+
+        .card-body-layout {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+        }
+        .card-info-side { flex: 1; }
 
         .card-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
             margin-bottom: 3px;
         }
         .card-title {
@@ -229,7 +263,7 @@
             margin-bottom: 2px;
         }
         
-        .badge { font-size: 0.6rem; padding: 1px 4px; border-radius: 4px; font-weight: 700; margin-left: 2px; text-transform: uppercase; }
+        .badge { font-size: 0.6rem; padding: 1px 4px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
         .badge-pot { background: rgba(0,0,0,0.05); color: var(--dark); }
         .badge-kol { background: #dbeafe; color: #1e40af; }
         .badge-kbl { background: #f3e8ff; color: #6b21a8; }
@@ -242,7 +276,30 @@
             color: var(--gray-text);
         }
 
-        /* --- NAVIGATION INFÉRIEURE SÉCURISÉE MULTI-ÉCRANS --- */
+        /* BOUTONS D'ACTION (Chirurgicaux) */
+        .btn-action-trigger {
+            background: var(--accent); color: white; border: none; padding: 8px 10px;
+            border-radius: 6px; font-size: 0.7rem; font-weight: 800; cursor: pointer;
+            white-space: nowrap; flex-shrink: 0; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+        .btn-action-trigger:disabled {
+            background: #cbd5e1; color: #94a3b8; box-shadow: none; cursor: not-allowed;
+        }
+
+        .card-actions-mini {
+            display: flex; gap: 8px; justify-content: flex-end; align-items: center;
+            margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);
+        }
+        .btn-mini {
+            font-size: 0.65rem; padding: 5px 10px; border-radius: 4px;
+            border: 1px solid var(--border); background: #f1f5f9; color: var(--gray-text);
+            font-weight: 700; cursor: pointer;
+        }
+        .btn-mini-primary {
+            background: #eff6ff; color: var(--accent); border-color: #bfdbfe;
+        }
+
+        /* --- NAVIGATION INFÉRIEURE --- */
         nav {
             background: white;
             border-top: 1px solid var(--border);
@@ -260,68 +317,32 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
+            gap: 4px;
             cursor: pointer;
             width: 25%;
             font-weight: 600;
         }
         nav button.active { color: var(--accent); font-weight: 700; }
-        nav button .nav-icon { font-size: 1.1rem; }
-
+        
         /* --- BANDE SYNCHRO NETWORK --- */
         .network-status-bar {
-            background: #e2e8f0;
-            text-align: center;
-            padding: 5px;
-            font-size: 0.65rem;
-            color: #475569;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            flex-shrink: 0;
-            border-top: 1px solid #cbd5e1;
-            transition: background 0.3s, color 0.3s;
+            background: #e2e8f0; text-align: center; padding: 5px; font-size: 0.65rem;
+            color: #475569; font-weight: 600; letter-spacing: 0.3px; flex-shrink: 0;
+            border-top: 1px solid #cbd5e1; transition: background 0.3s, color 0.3s;
         }
-        .network-status-bar.online {
-            background: var(--success-light);
-            color: var(--success);
-        }
+        .network-status-bar.online { background: var(--success-light); color: var(--success); }
 
-        /* --- DASHBOARD ELEMENTS & UNDER-TABS --- */
-        .dash-tabs {
-            display: flex;
-            background: #e2e8f0;
-            padding: 4px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            gap: 4px;
-        }
+        /* --- DASHBOARD ELEMENTS --- */
+        .dash-tabs { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 12px; gap: 4px; }
         .dash-tab-btn {
-            flex: 1;
-            border: none;
-            background: none;
-            padding: 8px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--gray-text);
-            border-radius: 6px;
-            cursor: pointer;
+            flex: 1; border: none; background: none; padding: 8px; font-size: 0.75rem;
+            font-weight: 700; color: var(--gray-text); border-radius: 6px; cursor: pointer;
         }
-        .dash-tab-btn.active {
-            background: white;
-            color: var(--dark);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
+        .dash-tab-btn.active { background: white; color: var(--dark); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .sub-view { display: none; }
         .sub-view.active { display: block; }
 
-        .dash-section-title {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--gray-text);
-            margin: 10px 0 4px 0;
-            font-weight: 700;
-        }
+        .dash-section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-text); margin: 10px 0 4px 0; font-weight: 700; }
         .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
         .dash-card { background: white; padding: 8px; border-radius: 6px; border: 1px solid var(--border); text-align: center; }
         .dash-card h3 { font-size: 1.25rem; color: var(--dark); margin: 1px 0; font-weight: 800; }
@@ -330,32 +351,27 @@
         .dash-list { list-style: none; }
         .dash-list li { 
             display: flex; justify-content: space-between; align-items: center;
-            padding: 5px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem;
+            padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.75rem;
         }
 
-        /* MINI CARTE LEAFLET */
         #map-container {
-            height: 180px;
-            width: 100%;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            margin-bottom: 10px;
-            background: #cbd5e1;
-            z-index: 10;
+            height: 150px; width: 100%; border-radius: 6px; border: 1px solid var(--border);
+            margin-bottom: 10px; background: #cbd5e1; z-index: 10;
         }
         .map-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            font-size: 0.75rem;
-            color: var(--gray-text);
-            font-weight: 600;
-            text-align: center;
-            padding: 20px;
+            display: flex; align-items: center; justify-content: center; height: 100%;
+            font-size: 0.75rem; color: var(--gray-text); font-weight: 600; text-align: center; padding: 20px;
         }
 
-        /* --- REJOINDRE MODULE PRESENTATION CLM --- */
+        /* --- CELEBRATION DISCRETE BANNER --- */
+        .celebration-banner {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #fcd34d; padding: 8px 12px; border-radius: 6px;
+            font-size: 0.75rem; color: #92400e; font-weight: 700; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        /* --- CLM VIEWER STRICTE NAVIGATION --- */
         .clm-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: #000000; display: none; flex-direction: column; z-index: 2000;
@@ -366,20 +382,44 @@
         }
         .clm-body {
             flex: 1; display: flex; flex-direction: column; justify-content: center;
-            align-items: center; color: white; padding: 20px; text-align: center;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            align-items: center; color: white; padding: 15px; text-align: center;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); overflow: hidden;
         }
-        .clm-product-slide {
-            width: 100%; max-width: 400px; background: rgba(255,255,255,0.05);
-            padding: 25px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+        
+        .clm-swipe-instruction {
+            font-size: 0.75rem; color: #94a3b8; font-weight: 600; 
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
         }
-        .clm-product-title { font-size: 1.4rem; font-weight: 800; color: #3b82f6; margin-bottom: 10px; }
-        .clm-product-desc { font-size: 0.85rem; line-height: 1.4; color: #cbd5e1; margin-bottom: 15px; text-align: left;}
-        .clm-tabs-nav { display: flex; gap: 8px; width: 100%; max-width: 400px; margin-top: 20px; }
-        .clm-tab-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: 700; font-size: 0.8rem; cursor: pointer; background: #334155; color: #94a3b8; }
+
+        .clm-slider-container {
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+            width: 100%; max-width: 400px; gap: 15px; flex: 1; max-height: 380px;
+        }
+        .clm-slider-container::-webkit-scrollbar { display: none; }
+        .clm-slider-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .clm-slide-item {
+            flex: 0 0 100%; scroll-snap-align: center;
+            background: rgba(255,255,255,0.05); padding: 25px;
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            text-align: left; display: flex; flex-direction: column; justify-content: center;
+        }
+        .clm-product-title { font-size: 1.3rem; font-weight: 800; color: #3b82f6; margin-bottom: 12px; }
+        .clm-product-desc { font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; }
+
+        .clm-tabs-nav { 
+            display: flex; gap: 6px; width: 100%; max-width: 400px; margin-top: 12px; 
+            overflow-x: auto; padding-bottom: 4px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 8px;
+        }
+        .clm-tabs-nav::-webkit-scrollbar { height: 4px; }
+        .clm-tabs-nav::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .clm-tab-btn { 
+            flex: 1; min-width: max-content; padding: 10px 12px; border: none; border-radius: 6px; 
+            font-weight: 800; font-size: 0.75rem; cursor: pointer; background: #334155; color: #94a3b8; 
+        }
         .clm-tab-btn.active { background: var(--accent); color: white; }
 
-        /* --- BOTTOM SHEETS --- */
+        /* --- BOTTOM SHEETS MODALS --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(15, 23, 42, 0.4); display: none; justify-content: center; align-items: flex-end; z-index: 1000;
@@ -387,9 +427,7 @@
         .modal {
             background: white; padding: 16px; border-radius: 12px 12px 0 0; width: 100%;
             max-height: 85vh; overflow-y: auto; box-shadow: 0 -4px 25px rgba(0,0,0,0.15);
-            animation: slideUp 0.2s ease-out;
         }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
         .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 10px; color: var(--dark); border-bottom: 1px solid var(--border); padding-bottom: 4px;}
         .form-group { margin-bottom: 10px; }
@@ -397,33 +435,26 @@
         .form-group input, .form-group select, .form-group textarea {
             width: 100%; padding: 7px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.8rem; background: #f8fafc;
         }
-        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid var(--border); max-height: 160px; overflow-y: auto; }
+        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid var(--border); max-height: 140px; overflow-y: auto; }
         .checkbox-grid label { font-weight: 500; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; color: var(--dark); }
-        .checkbox-grid input[type="checkbox"] { width: auto; margin: 0; }
 
         .btn-group { display: flex; gap: 6px; margin-top: 12px; }
         .btn-modal { flex: 1; padding: 9px; border: none; border-radius: 5px; font-weight: 700; font-size: 0.8rem; cursor: pointer; text-align: center;}
         .btn-modal-cancel { background: #e2e8f0; color: var(--dark); }
         .btn-modal-confirm { background: var(--accent); color: white; }
 
-        .planning-select-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px;
-            border-bottom: 1px solid #f1f5f9;
+        /* Climat de prescription (Épuré et textuel) */
+        .climat-selector { display: flex; gap: 8px; margin-top: 4px; }
+        .climat-option {
+            flex: 1; text-align: center; padding: 8px; border: 1px solid var(--border);
+            border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700; background: #f8fafc;
         }
-        .planning-select-item label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
+        .climat-option.active[data-val="Réticence"] { background: var(--danger-light); border-color: var(--danger); color: var(--danger); }
+        .climat-option.active[data-val="Neutre"] { background: var(--warning-light); border-color: var(--warning); color: var(--warning); }
+        .climat-option.active[data-val="Favorable"] { background: var(--success-light); border-color: var(--success); color: var(--success); }
+
         .prospect-detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.82rem;}
         .prospect-detail-row strong { color: var(--gray-text); font-weight: 600; }
-        .prospect-detail-row span { color: var(--dark); font-weight: 500; }
     </style>
 </head>
 <body>
@@ -433,15 +464,15 @@
         <div class="header-top">
             <div class="brand-box">
                 <span class="brand-title">Atlasta</span>
-                <span class="beta-badge-grand"><span class="beta-underline">Version Bêta</span></span>
+                <span class="beta-badge-pro">BÊTA</span>
             </div>
             <a href="https://wa.me/221774144799" target="_blank" class="whatsapp-btn">
-                <span>💬 Support</span>
+                <span>Support</span>
             </a>
         </div>
         <div class="header-profile">
-            <div>Délégué : <span class="profile-name">Oumar Sow</span></div>
-            <span class="date-context">Semaine Active</span>
+            <div><span class="profile-name">Oumar Sow</span> <span class="profile-meta">| CM-104 | DK-PT</span></div>
+            <span class="date-context">Semaine 2</span>
         </div>
     </header>
 
@@ -466,16 +497,19 @@
     <!-- --- SCROLL CONTAINER --- -->
     <div class="main-scroll-content" id="main-scroll-viewport">
         
+        <!-- BANDEAU DISCRET ANNIVERSAIRE -->
+        <div id="celebration-zone" style="display: none;"></div>
+
         <!-- VUE PLANNING -->
         <section id="view-planning" class="view active">
             <div id="planning-list"></div>
         </section>
 
-        <!-- VUE DASHBOARD REPENENSÉE EN DEUX ONGLETS -->
+        <!-- VUE DASHBOARD -->
         <section id="view-dashboard" class="view">
             <div class="dash-tabs">
-                <button class="dash-tab-btn active" id="btn-sub-terrain" onclick="switchDashTab('terrain')">📍 Supervision Terrain</button>
-                <button class="dash-tab-btn" id="btn-sub-labo" onclick="switchDashTab('labo')">📊 Statistiques Labo</button>
+                <button class="dash-tab-btn active" id="btn-sub-terrain" onclick="switchDashTab('terrain')">Supervision Terrain</button>
+                <button class="dash-tab-btn" id="btn-sub-labo" onclick="switchDashTab('labo')">Statistiques Labo</button>
             </div>
 
             <!-- SOUS-VUE 1 : SUPERVISION TERRAIN -->
@@ -492,14 +526,14 @@
                     </div>
                 </div>
 
-                <div class="dash-section-title">Zone de Présentation Macro (Rayon 500m)</div>
+                <div class="dash-section-title">Sectorisation (Rayon 500m)</div>
                 <div id="map-container">
                     <div class="map-placeholder" id="map-fallback">
-                        En attente de la première validation de rapport chez le médecin pour afficher la zone.
+                        En attente de la première validation de CRV chez le praticien.
                     </div>
                 </div>
 
-                <div class="dash-section-title">Performance CLM (Présentations Produits)</div>
+                <div class="dash-section-title">Performance e-ADV (Detailing)</div>
                 <div class="card" style="cursor: default;">
                     <table style="width: 100%; font-size: 0.75rem; text-align: left; border-collapse: collapse;">
                         <thead>
@@ -509,31 +543,29 @@
                                 <th style="padding-bottom: 4px; text-align: right;">Durée Moy.</th>
                             </tr>
                         </thead>
-                        <tbody id="clm-stats-table-body">
-                            <!-- Rempli dynamiquement -->
-                        </tbody>
+                        <tbody id="clm-stats-table-body"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- SOUS-VUE 2 : COMPTEURS ET STRATÉGIE LABO (DONNÉES INITIALES CONSERVÉES) -->
+            <!-- SOUS-VUE 2 : COMPTEURS LABO -->
             <div id="sub-view-labo" class="sub-view">
-                <div class="dash-section-title">Couverture & Visites</div>
+                <div class="dash-section-title">Reach & Activité</div>
                 <div class="dash-grid">
                     <div class="dash-card">
-                        <p>Couverture Secteur</p>
+                        <p>Reach (Couverture)</p>
                         <h3 id="dash-coverage">0%</h3>
                     </div>
                     <div class="dash-card">
-                        <p>Visites Réalisées</p>
+                        <p>CRV Validés</p>
                         <h3 id="dash-done-visits">0</h3>
                     </div>
                     <div class="dash-card">
-                        <p>Restants à Visiter</p>
+                        <p>Reste à Faire</p>
                         <h3 id="dash-remaining-visits">0</h3>
                     </div>
                     <div class="dash-card">
-                        <p>Performance Journée</p>
+                        <p>Call Rate Journalier</p>
                         <h3 id="dash-day-perf">0%</h3>
                     </div>
                 </div>
@@ -549,25 +581,20 @@
                         <h3 id="dash-rem-kbl" style="color: #7c3aed;">0</h3>
                     </div>
                     <div class="dash-card" style="grid-column: span 2; background: #fff5f5; border: 1px solid #fee2e2;">
-                        <p style="color: var(--danger); font-weight: 700;">🚨 Cibles Jamais Visitées (Répertoire)</p>
+                        <p style="color: var(--danger); font-weight: 700;">HCP Jamais Visités (Portefeuille)</p>
                         <h3 id="dash-never-visited" style="color: var(--danger);">0</h3>
                     </div>
                 </div>
 
-                <div class="dash-section-title">Score d'Adéquation Fréquence (Labo)</div>
+                <div class="dash-section-title">Score de Ciblage & Fréquence</div>
                 <div class="card" style="cursor: default; font-size: 0.8rem; text-align: center;">
                     <strong>Objectifs de Ciblage Respectés (A:3, B:2, C:1) :</strong>
                     <p id="dash-frequency-score" style="font-size: 1.1rem; font-weight: 800; color: var(--success); margin-top: 2px;">100%</p>
                 </div>
 
-                <div class="dash-section-title">Top Molécules Présentées</div>
+                <div class="dash-section-title">Top Produits Détaillés</div>
                 <div class="card" style="cursor: default;">
                     <ul id="dash-products-list" class="dash-list"></ul>
-                </div>
-                
-                <div class="dash-section-title">Ratios Terrain</div>
-                <div class="card" style="cursor: default;">
-                    <p id="dash-ratio-text" style="font-size: 0.75rem; font-weight: 600; text-align: center;">Chargement...</p>
                 </div>
             </div>
         </section>
@@ -575,8 +602,8 @@
         <!-- VUE REPERTOIRE -->
         <section id="view-directory" class="view">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: var(--gray-text);" id="dir-count">Total : 20 prospects</span>
-                <button class="btn-macro btn-macro-primary" style="flex:none; padding: 4px 8px;" onclick="openCreateProspectModal()">+ Ajouter</button>
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--gray-text);" id="dir-count">Total : 20 HCPs</span>
+                <button class="btn-macro btn-macro-primary" style="flex:none; padding: 4px 8px;" onclick="openCreateProspectModal()">+ Intégrer un HCP</button>
             </div>
             <div id="directory-list"></div>
         </section>
@@ -597,118 +624,115 @@
 
     </div>
 
-    <!-- --- BOTTOM NAVIGATION --- -->
+    <!-- --- BOTTOM NAVIGATION (Icones minimalistes pro) --- -->
     <nav>
         <button id="nav-planning" class="active" onclick="changeView('planning')">
-            <span class="nav-icon">📅</span><span>Planning</span>
+            <svg width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Call Plan</span>
         </button>
         <button id="nav-dashboard" onclick="changeView('dashboard')">
-            <span class="nav-icon">📊</span><span>Dashboard</span>
+            <svg width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            <span>Dashboard</span>
         </button>
         <button id="nav-directory" onclick="changeView('directory')">
-            <span class="nav-icon">👥</span><span>Répertoire</span>
+            <svg width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            <span>Portefeuille</span>
         </button>
         <button id="nav-settings" onclick="changeView('settings')">
-            <span class="nav-icon">⚙️</span><span>Réglages</span>
+            <svg width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span>Réglages</span>
         </button>
     </nav>
 
     <!-- --- BANDEAU BAS --- -->
-    <div class="network-status-bar" id="network-bar">
-        Mode hors ligne — En attente de synchronisation
-    </div>
+    <div class="network-status-bar" id="network-bar">Mode hors ligne — En attente de synchronisation</div>
 
     <!-- ==================== DIALOGUES MODALES ==================== -->
 
-    <!-- MODULE DE PRÉSENTATION CLM PLEIN ÉCRAN -->
+    <!-- MODULE PRE-CALL PLANNING -->
+    <div id="modal-pre-call-clm" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-pre-call-clm')">
+        <div class="modal">
+            <h3 class="modal-title">Préparation e-ADV (Ordre de Présentation)</h3>
+            <p style="font-size: 0.75rem; color: var(--gray-text); margin-bottom: 10px;">Sélectionnez jusqu'à 5 produits dans l'ordre de votre Detailing.</p>
+            <div id="pre-call-list" style="border: 1px solid var(--border); border-radius: 6px; max-height: 220px; overflow-y: auto; margin-bottom: 15px;"></div>
+            <div class="btn-group">
+                <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-pre-call-clm')">Annuler</button>
+                <button type="button" class="btn-modal btn-modal-confirm" onclick="launchCLMViewerAfterPreCall()">Valider & Lancer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULE DE PRÉSENTATION CLM -->
     <div id="modal-clm-viewer" class="clm-overlay">
         <div class="clm-header">
-            <span id="clm-timer-display">⏱️ Durée : 0s</span>
-            <strong id="clm-prospect-context">Présentation</strong>
-            <button onclick="closeCLMViewer()" style="background:#dc2626; color:white; border:none; padding:4px 10px; border-radius:4px; font-weight:700; cursor:pointer;">Quitter</button>
+            <span id="clm-timer-display">Temps : 0s</span>
+            <strong id="clm-prospect-context">Detailing</strong>
+            <button onclick="abortCLMReviewMode()" style="background:#475569; color:white; border:none; padding:4px 8px; border-radius:4px; font-weight:700; cursor:pointer; font-size:0.7rem; margin-right:5px;">Quitter la Révision</button>
+            <button onclick="commitCLMToVisitReport()" style="background:var(--success); color:white; border:none; padding:4px 10px; border-radius:4px; font-weight:700; cursor:pointer; font-size:0.7rem;">Valider et Lancer CRV</button>
         </div>
         <div class="clm-body">
-            <div class="clm-product-slide" id="clm-slide-content">
-                <!-- Injecté par JS -->
-            </div>
-            <div class="clm-tabs-nav">
-                <button class="clm-tab-btn active" id="btn-clm-prod0" onclick="switchCLMProduct(0)">💊 Amoxicilline</button>
-                <button class="clm-tab-btn" id="btn-clm-prod1" onclick="switchCLMProduct(1)">💊 Metformine</button>
-            </div>
+            <div class="clm-swipe-instruction">&lt; Balayage : Diaporamas de la molécule en cours &gt;</div>
+            <div class="clm-slider-container lock-scroll" id="clm-slider-content"></div>
+            <div class="clm-tabs-nav" id="clm-tabs-container"></div>
         </div>
     </div>
 
-    <!-- ACTIONS PROSPECT J2 -->
-    <div id="modal-prospect-action" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-prospect-action')">
-        <div class="modal">
-            <h3 class="modal-title" id="action-modal-name">Professionnel</h3>
-            <div id="action-modal-info-block" style="margin-bottom: 12px; font-size: 0.8rem; color: var(--gray-text);"></div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                <!-- AJOUT DU BOUTON DE LANCEMENT CLM -->
-                <button class="btn-modal" style="background: var(--accent); color: white;" onclick="launchCLMViewer()">📊 Présenter les produits (CLM)</button>
-                <button class="btn-modal btn-modal-confirm" style="background: var(--success);" onclick="routeToVisitReport()">📝 Visiter (Faire le rapport)</button>
-                <button class="btn-modal" style="background: var(--danger-light); color: var(--danger);" onclick="execMarkAbsent()">❌ Déclarer Absent</button>
-                <button class="btn-modal" style="background: var(--warning-light); color: var(--warning);" onclick="routeToPostpone()">📅 Reporter la visite</button>
-                <button class="btn-modal btn-modal-cancel" onclick="closeModal('modal-prospect-action')">Annuler</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- FORMULAIRE RAPPORT -->
+    <!-- FORMULAIRE RAPPORT CRV -->
     <div id="modal-visit-report" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-visit-report')">
         <div class="modal">
-            <h3 class="modal-title">Rapport Clinique Terrain</h3>
+            <h3 class="modal-title">Saisie du CRV (Compte-Rendu de Visite)</h3>
             <form id="form-visit-report" onsubmit="submitVisitReport(event)">
                 <input type="hidden" id="form-report-visit-id">
                 <div class="form-group">
-                    <label>Binôme de visite</label>
+                    <label>Type de visite</label>
                     <select id="form-report-mode" required>
-                        <option value="Solo">Solo (Délégué Seul)</option>
-                        <option value="Duo">Duo (Accompagné par le Manager)</option>
+                        <option value="Simple">Simple (Délégué Seul)</option>
+                        <option value="Accompagnée">Accompagnée (Duo Manager)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Molécules Présentées (Sélectionner)</label>
-                    <div class="checkbox-grid" id="form-products-checkboxes">
-                        <!-- Généré en JS -->
+                    <label>Produits Détaillés (Sélectionnés automatiquement)</label>
+                    <div class="checkbox-grid" id="form-products-checkboxes"></div>
+                </div>
+                <div class="form-group">
+                    <label>Avis du HCP (Climat de prescription)</label>
+                    <div class="climat-selector">
+                        <div class="climat-option" data-val="Réticence" onclick="setClimatValue('Réticence')">Réticent</div>
+                        <div class="climat-option" data-val="Neutre" onclick="setClimatValue('Neutre')">Neutre</div>
+                        <div class="climat-option active" data-val="Favorable" onclick="setClimatValue('Favorable')">Favorable</div>
                     </div>
+                    <input type="hidden" id="form-report-climat" value="Favorable">
                 </div>
                 <div class="form-group">
-                    <label>Objection Constatée</label>
-                    <select id="form-report-objection">
-                        <option value="Aucune">Aucune objection majeure</option>
-                        <option value="Prix / Accessibilité">Prix élevé / Rupture de stock</option>
-                        <option value="Habitude de prescription">Fidèle aux concurrents</option>
-                        <option value="Réticence efficacité">Demande des données cliniques</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Demandes particulières</label>
-                    <input type="text" id="form-report-demands" placeholder="Ex: Échantillons, documentations">
+                    <label>Mémo Flash / Insight Marquant</label>
+                    <textarea id="form-report-memo-flash" rows="2" placeholder="Saisissez vos notes confidentielles ou requêtes ici..."></textarea>
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-visit-report')">Annuler</button>
-                    <button type="submit" id="btn-submit-report-form" class="btn-modal btn-modal-confirm">Enregistrer le Rapport</button>
+                    <button type="submit" id="btn-submit-report-form" class="btn-modal btn-modal-confirm">Valider le CRV</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ROUTAGE DES REPORETS -->
-    <div id="modal-postpone-select" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-postpone-select')">
+    <!-- UNIFIED : PLANIFIER VISITE (Remplace Reporter et Prise RDV) -->
+    <div id="modal-plan-visit" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-plan-visit')">
         <div class="modal">
-            <h3 class="modal-title">Reporter vers une journée cible</h3>
-            <input type="hidden" id="form-postpone-visit-id">
+            <h3 class="modal-title">Planifier la visite</h3>
+            <input type="hidden" id="form-plan-source-id">
+            <input type="hidden" id="form-plan-is-visit">
             <div class="form-group">
-                <label>Journée future libre</label>
-                <select id="form-postpone-target-day">
-                    <option value="J4">J4 (Jeudi)</option>
-                    <option value="J5">J5 (Vendredi)</option>
+                <label>Journée cible</label>
+                <select id="form-plan-target-day">
+                    <option value="J2">J2 (Aujourd'hui)</option>
+                    <option value="J3">J3</option>
+                    <option value="J4">J4</option>
+                    <option value="J5">J5</option>
                 </select>
             </div>
             <div class="btn-group">
-                <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-postpone-select')">Annuler</button>
-                <button type="button" class="btn-modal btn-modal-confirm" style="background: var(--warning); color:white;" onclick="execPostpone()">Reporter</button>
+                <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-plan-visit')">Annuler</button>
+                <button type="button" class="btn-modal btn-modal-confirm" style="background: var(--accent); color:white;" onclick="execPlanVisit()">Valider la Planification</button>
             </div>
         </div>
     </div>
@@ -716,13 +740,11 @@
     <!-- SELECTIONNEUR DE PLANNING MANUEL -->
     <div id="modal-create-planning-selector" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-create-planning-selector')">
         <div class="modal" style="max-height: 90vh;">
-            <h3 class="modal-title" id="planning-selector-title">Planifier la journée</h3>
+            <h3 class="modal-title" id="planning-selector-title">Bâtir le Call Plan</h3>
             <div class="form-group">
-                <input type="text" id="planning-search-input" placeholder="🔍 Filtrer par nom ou spécialité..." oninput="filterPlanningSelectorList()">
+                <input type="text" id="planning-search-input" placeholder="Filtrer par nom..." oninput="filterPlanningSelectorList()">
             </div>
-            <div style="max-height: 350px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;" id="planning-selector-list-container">
-                <!-- Rempli en JS -->
-            </div>
+            <div style="max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;" id="planning-selector-list-container"></div>
             <div class="btn-group">
                 <button type="button" class="btn-modal btn-modal-cancel" onclick="closeModal('modal-create-planning-selector')">Annuler</button>
                 <button type="button" class="btn-modal btn-modal-confirm" onclick="execSubmitManualPlanning()">Injecter la sélection</button>
@@ -730,13 +752,18 @@
         </div>
     </div>
 
-    <!-- FICHE CONSULTATION RÉPERTOIRE -->
+    <!-- FICHE CONSULTATION / EDIT MEMO FLASH DIRECT -->
     <div id="modal-prospect-view" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-prospect-view')">
         <div class="modal">
-            <h3 class="modal-title" id="view-prospect-name">Fiche Cible</h3>
+            <h3 class="modal-title" id="view-prospect-name">Fiche HCP</h3>
             <div id="view-prospect-details-container"></div>
-            <div class="btn-group" style="margin-top:10px;">
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Mémo Flash Confidentiel</label>
+                <textarea id="view-prospect-memo-field" rows="2" placeholder="Aucun mémo saisi. Modifiez ici si besoin."></textarea>
+            </div>
+            <div class="btn-group">
                 <button class="btn-modal btn-modal-cancel" onclick="closeModal('modal-prospect-view')">Fermer</button>
+                <button class="btn-modal btn-modal-confirm" onclick="saveDirectProspectMemo()">Enregistrer le Mémo</button>
             </div>
         </div>
     </div>
@@ -744,7 +771,7 @@
     <!-- CREER PROSPECT -->
     <div id="modal-create-prospect" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-create-prospect')">
         <div class="modal">
-            <h3 class="modal-title">Nouveau Prospect Stratégique</h3>
+            <h3 class="modal-title">Nouveau HCP</h3>
             <form id="form-create-prospect" onsubmit="submitCreateProspect(event)">
                 <div class="form-group">
                     <label>Nom Complet</label>
@@ -760,7 +787,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Spécialité / Activité</label>
+                    <label>Spécialité / Segment</label>
                     <input type="text" id="add-spec" placeholder="Ex: Généraliste" required>
                 </div>
                 <div class="form-group">
@@ -768,15 +795,15 @@
                     <input type="text" id="add-etab" required>
                 </div>
                 <div class="form-group">
-                    <label>Secteur Géographique</label>
+                    <label>Territoire de couverture</label>
                     <input type="text" id="add-secteur" required>
                 </div>
                 <div class="form-group">
-                    <label>Potentiel de Visite</label>
+                    <label>Classification (Décile)</label>
                     <select id="add-potentiel">
-                        <option value="A">Potentiel A (3 vis/cycle)</option>
-                        <option value="B">Potentiel B (2 vis/cycle)</option>
-                        <option value="C">Potentiel C (1 vis/cycle)</option>
+                        <option value="A">Classe A (3 vis/cycle)</option>
+                        <option value="B">Classe B (2 vis/cycle)</option>
+                        <option value="C">Classe C (1 vis/cycle)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -806,9 +833,9 @@
     <!-- AJOUT HORS-PLANNING -->
     <div id="modal-add-hors-planning" class="modal-overlay" onclick="closeModalOnOuterClick(event, 'modal-add-hors-planning')">
         <div class="modal">
-            <h3 class="modal-title">Ajouter une Visite Hors-Planning</h3>
+            <h3 class="modal-title">Ajouter un Call Ad-hoc</h3>
             <div class="form-group">
-                <label>Choisir une cible du répertoire</label>
+                <label>Choisir un HCP du portefeuille</label>
                 <select id="select-hors-planning-prospect"></select>
             </div>
             <div class="btn-group">
@@ -825,33 +852,55 @@
             "Oméprazole", "Amlodipine", "Ramipril", "Salbutamol", "Azithromycine"
         ];
 
-        // Fiches produits CLM pour la simulation de défilement
         const CLM_PRODUCTS_DATA = [
-            { name: "Amoxicilline", content: "<h3>Amoxicilline 1g</h3><br><p><b>Indications :</b> Infections bactériennes communautaires respiratoires et urinaires.</p><br><p><b>Avantages :</b> Biodisponibilité supérieure à 90%, excellente diffusion tissulaire.</p><br><p><b>Posologie standard :</b> 1g deux à trois fois par jour chez l'adulte.</p>" },
-            { name: "Metformine", content: "<h3>Metformine 1000mg</h3><br><p><b>Indications :</b> Traitement de première intention du Diabète de type 2.</p><br><p><b>Mécanisme :</b> Réduction de la production hépatique de glucose et amélioration de la sensibilité à l'insuline.</p><br><p><b>Avantage clé :</b> Absence de risque d'hypoglycémie en monothérapie.</p>" }
+            { name: "Amoxicilline", slides: [
+                { title: "Amoxicilline 1g - Introduction", desc: "<b>Antibiotique de 1ère intention</b><br><br>Traitement de choix contre les infections respiratoires hautes et basses communautaires." },
+                { title: "Spectre Bactérien", desc: "<b>Activité bactéricide large</b><br><br>Cible prioritairement les pneumocoques et les streptocoques avec une excellente sensibilité." },
+                { title: "Pharmacocinétique", desc: "<b>Diffusion Tissulaire</b><br><br>Biodisponibilité supérieure à 90% et concentration rapide dans les sécrétions bronchiques et ORL." },
+                { title: "Tolérance & Sécurité", desc: "<b>Profil très favorable</b><br><br>Bien toléré chez l'adulte et l'enfant. Contre-indiqué uniquement en cas d'allergie vraie aux pénicillines." },
+                { title: "Schéma Posologique", desc: "<b>Recommandations de prise</b><br><br>1g 2 à 3 fois par jour au cours des repas pour optimiser l'absorption et réduire les troubles digestifs." }
+            ]},
+            { name: "Metformine", slides: [
+                { title: "Metformine 1000 - Le Standard", desc: "<b>Le Pilier du DT2</b><br><br>Traitement de référence absolue en première intention du Diabète de type 2 (DT2)." },
+                { title: "Mécanisme d'Action", desc: "<b>Insulino-sensibilisateur</b><br><br>Inhibition de la néoglucogenèse hépatique et amélioration de la captation périphérique du glucose." },
+                { title: "Efficacité Glycémique", desc: "<b>Baisse de l'HbA1c</b><br><br>Réduction moyenne de l'HbA1c de 1 à 1,5% en monothérapie après 3 mois de traitement régulier." },
+                { title: "Bénéfice Cardiovasculaire", desc: "<b>Au-delà de la glycémie</b><br><br>La seule molécule antidiabétique historique ayant prouvé une réduction de la mortalité cardiovasculaire globale." },
+                { title: "Posologie", desc: "<b>Titration progressive</b><br><br>Initier à 500mg au repas pour éviter l'inconfort digestif, jusqu'à la dose maximale tolérée de 2000mg/jour." }
+            ]},
+            { name: "Atorvastatine", slides: [
+                { title: "Atorvastatine - Protection", desc: "<b>Maîtrise du Risque Vasculaire</b><br><br>Indiquée dans les dyslipidémies sévères et la prévention secondaire des accidents ischémiques." },
+                { title: "Cible LDL-Cholestérol", desc: "<b>Baisse drastique du LDL</b><br><br>Capacité à réduire le taux de LDL-C de plus de 50% avec les dosages forts (40mg et 80mg)." },
+                { title: "Effet Pléiotrope", desc: "<b>Stabilisation de la plaque</b><br><br>Propriétés anti-inflammatoires au niveau de l'endothélium vasculaire, réduisant le risque de rupture d'athérome." },
+                { title: "Profil de Tolérance", desc: "<b>Surveillance hépatique</b><br><br>Généralement bien tolérée. Surveillance transaminases et CPK recommandée en cas de myalgies signalées." },
+                { title: "Mode d'Administration", desc: "<b>Flexibilité de prise</b><br><br>Grâce à sa longue demi-vie (14h), elle peut être administrée à n'importe quel moment de la journée en prise unique." }
+            ]},
+            { name: "Paracétamol", slides: [
+                { title: "Paracétamol 1g - L'Essentiel", desc: "<b>L'Antalgique de Palier 1</b><br><br>Le traitement de première intention mondial pour les douleurs d'intensité légère à modérée et la fièvre." },
+                { title: "Mécanisme Central", desc: "<b>Action antipyrétique</b><br><br>Inhibition de la synthèse des prostaglandines au niveau du système nerveux central exclusivement." },
+                { title: "Sécurité Gastrique", desc: "<b>Efficacité sans ulcération</b><br><br>Contrairement aux AINS, il n'irrite pas la muqueuse gastrique et ne présente aucun risque de saignement." },
+                { title: "Précautions Particulières", desc: "<b>Pédiatrie & Grossesse</b><br><br>Le seul antalgique validé et totalement sûr à tous les trimestres de la grossesse et chez le nourrisson." },
+                { title: "Limites Posologiques", desc: "<b>Attention au Foie</b><br><br>Respecter le délai de 4h minimum entre les prises. Dose maximale absolue de 4g/jour (3g chez la personne âgée)." }
+            ]},
+            { name: "Ibuprofène", slides: [
+                { title: "Ibuprofène 400 - Action Rapide", desc: "<b>L'AINS de Référence</b><br><br>Action anti-inflammatoire périphérique et antipyrétique puissante pour les douleurs aiguës." },
+                { title: "Inhibition COX", desc: "<b>Double mécanisme</b><br><br>Inhibiteur réversible et non sélectif des enzymes COX-1 et COX-2, bloquant la cascade inflammatoire." },
+                { title: "Champs d'Indication", desc: "<b>Polyvalence clinique</b><br><br>Traumatologie bénigne, dysménorrhées, céphalées de tension et poussées arthrosiques." },
+                { title: "Précautions d'Emploi", desc: "<b>Risques gastriques</b><br><br>Prudence chez les patients âgés ou à risque d'ulcère. Contre-indiqué au 3ème trimestre de la grossesse." },
+                { title: "Conseils de Prise", desc: "<b>Protection de la muqueuse</b><br><br>À prendre obligatoirement au milieu des repas. Cure courte de 3 à 5 jours privilégiée." }
+            ]}
         ];
 
         const PROSPECTS_INITIALS = [
-            { id: 1, type: 'Pharmacien', nom: 'Pharmacie Nationale', spec: 'Officine', etablissement: 'Pharmacie', secteur: 'Plateau', potentiel: 'A', influence: 'KBL', anniv: '12 Janvier', contact: '+221 33 821 44 55' },
-            { id: 2, type: 'Pharmacien', nom: 'Pharmacie de la Paix', spec: 'Officine', etablissement: 'Pharmacie', secteur: 'Medina', potentiel: 'B', influence: 'Standard', anniv: '24 Mars', contact: '+221 33 824 99 11' },
-            { id: 3, type: 'Infirmière', nom: 'Mme. Diagne Awa', spec: 'Soins Ambulatoires', etablissement: 'Poste de Santé', secteur: 'Yoff', potentiel: 'C', influence: 'Standard', anniv: '05 Novembre', contact: '+221 77 512 34 56' },
-            { id: 4, type: 'Infirmière', nom: 'Mme. Ndiaye Mariama', spec: 'Soins Généraux', etablissement: 'Hôpital Principal', secteur: 'Plateau', potentiel: 'B', influence: 'Standard', anniv: '14 Février', contact: '+221 76 611 22 33' },
-            { id: 5, type: 'Infirmier', nom: 'M. Cissé Ousmane', spec: 'Urgences', etablissement: 'Clinique Madeleine', secteur: 'Dakar Centre', potentiel: 'C', influence: 'Standard', anniv: '30 Mai', contact: '+221 70 415 88 99' },
-            { id: 6, type: 'Médecin', nom: 'Dr. Seck Abdou', spec: 'Cardiologue', etablissement: 'Clinique de la Paix', secteur: 'Dakar Centre', potentiel: 'A', influence: 'KOL', anniv: '19 Avril', contact: '+221 77 638 11 22' },
-            { id: 7, type: 'Médecin', nom: 'Dr. Diallo Thierno', spec: 'Pédiatre', etablissement: 'Hôpital Albert Royer', secteur: 'Fann', potentiel: 'A', influence: 'KOL', anniv: '02 Décembre', contact: '+221 77 412 88 44' },
-            { id: 8, type: 'Médecin', nom: 'Dr. Fall Aminata', spec: 'Gynécologue', etablissement: 'Clinique Gesta', secteur: 'Point E', potentiel: 'B', influence: 'Standard', anniv: '15 Juillet', contact: '+221 77 332 55 66' },
-            { id: 9, type: 'Médecin', nom: 'Dr. Wade Ibrahima', spec: 'Généraliste', etablissement: 'Cabinet Médical Centenaire', secteur: 'Medina', potentiel: 'C', influence: 'Standard', anniv: '08 Septembre', contact: '+221 76 221 00 11' },
-            { id: 10, type: 'Médecin', nom: 'Dr. Ba Cheikh', spec: 'Dermatologue', etablissement: 'Hôpital Dantec', secteur: 'Plateau', potentiel: 'A', influence: 'KOL', anniv: '22 Janvier', contact: '+221 77 554 33 22' },
-            { id: 11, type: 'Médecin', nom: 'Dr. Sow Fatoumata', spec: 'Endocrinologue', etablissement: 'Clinique Pasteur', secteur: 'Fann', potentiel: 'B', influence: 'Standard', anniv: '11 Octobre', contact: '+221 70 889 44 55' },
-            { id: 12, type: 'Médecin', nom: 'Dr. Kane Moussa', spec: 'Généraliste', etablissement: 'Poste de Santé', secteur: 'Yoff', potentiel: 'B', influence: 'Standard', anniv: '17 Mars', contact: '+221 77 199 88 77' },
-            { id: 13, type: 'Médecin', nom: 'Dr. Sy Malick', spec: 'Ophatlmologue', etablissement: 'Clinique de la Vue', secteur: 'Dakar Centre', potentiel: 'A', influence: 'KOL', anniv: '03 Juin', contact: '+221 77 245 11 22' },
-            { id: 14, type: 'Médecin', nom: 'Dr. Thiam Khady', spec: 'Rhumatologue', etablissement: 'Hôpital Grand Yoff', secteur: 'Grand Yoff', potentiel: 'B', influence: 'Standard', anniv: '29 Août', contact: '+221 76 524 33 44' },
-            { id: 15, type: 'Médecin', nom: 'Dr. Mbaye Omar', spec: 'Neurologue', etablissement: 'Clinique Neuro', secteur: 'Point E', potentiel: 'A', influence: 'Standard', anniv: '14 Septembre', contact: '+221 77 912 33 44' },
-            { id: 16, type: 'Médecin', nom: 'Dr. Sarr Babacar', spec: 'Généraliste', etablissement: 'Cabinet Privé', secteur: 'Parcelles', potentiel: 'C', influence: 'Standard', anniv: '26 Juillet', contact: '+221 77 400 11 22' },
-            { id: 17, type: 'Médecin', nom: 'Dr. Touré Astou', spec: 'Pédiatre', etablissement: 'Clinique du Nord', secteur: 'Ngor', potentiel: 'B', influence: 'Standard', anniv: '05 Mai', contact: '+221 70 311 44 77' },
-            { id: 18, type: 'Médecin', nom: 'Dr. Faye Birame', spec: 'Urologue', etablissement: 'Hôpital Principal', secteur: 'Plateau', potentiel: 'A', influence: 'KOL', anniv: '12 Novembre', contact: '+221 77 651 00 99' },
-            { id: 19, type: 'Médecin', nom: 'Dr. Diédhiou Alphonse', spec: 'Gastro-entérologue', etablissement: 'Clinique du Centre', secteur: 'Dakar Centre', potentiel: 'B', influence: 'Standard', anniv: '21 Février', contact: '+221 77 800 22 33' },
-            { id: 20, type: 'Médecin', nom: 'Dr. Boye Coumba', spec: 'Généraliste', etablissement: 'Poste de Santé', secteur: 'Medina', potentiel: 'C', influence: 'Standard', anniv: '13 Août', contact: '+221 76 912 44 55' }
+            { id: 1, type: 'Pharmacien', nom: 'Pharmacie Nationale', spec: 'Officine', etablissement: 'Pharmacie', secteur: 'Plateau', potentiel: 'A', influence: 'KBL', anniv: '22 Mai', contact: '+221 33 821 44 55', memo: 'Préfère les visites le matin avant le rush.'},
+            { id: 2, type: 'Pharmacien', nom: 'Pharmacie de la Paix', spec: 'Officine', etablissement: 'Pharmacie', secteur: 'Medina', potentiel: 'B', influence: 'Standard', anniv: '24 Mars', contact: '+221 33 824 99 11', memo: ''},
+            { id: 3, type: 'Infirmière', nom: 'Mme. Diagne Awa', spec: 'Soins Ambulatoires', etablissement: 'Poste de Santé', secteur: 'Yoff', potentiel: 'C', influence: 'Standard', anniv: '05 Novembre', contact: '+221 77 512 34 56', memo: ''},
+            { id: 4, type: 'Infirmière', nom: 'Mme. Ndiaye Mariama', spec: 'Soins Généraux', etablissement: 'Hôpital Principal', secteur: 'Plateau', potentiel: 'B', influence: 'Standard', anniv: '14 Février', contact: '+221 76 611 22 33', memo: ''},
+            { id: 5, type: 'Infirmier', nom: 'M. Cissé Ousmane', spec: 'Urgences', etablissement: 'Clinique Madeleine', secteur: 'Dakar Centre', potentiel: 'C', influence: 'Standard', anniv: '30 Mai', contact: '+221 70 415 88 99', memo: ''},
+            { id: 6, type: 'Médecin', nom: 'Dr. Seck Abdou', spec: 'Cardiologue', etablissement: 'Clinique de la Paix', secteur: 'Dakar Centre', potentiel: 'A', influence: 'KOL', anniv: '19 Avril', contact: '+221 77 638 11 22', memo: 'Très à cheval sur les études cliniques comparatives.'},
+            { id: 7, type: 'Médecin', nom: 'Dr. Diallo Thierno', spec: 'Pédiatre', etablissement: 'Hôpital Albert Royer', secteur: 'Fann', potentiel: 'A', influence: 'KOL', anniv: '22 Mai', contact: '+221 77 412 88 44', memo: 'Proclame une écoute attentive des nouveautés ORL.'},
+            { id: 8, type: 'Médecin', nom: 'Dr. Fall Aminata', spec: 'Gynécologue', etablissement: 'Clinique Gesta', secteur: 'Point E', potentiel: 'B', influence: 'Standard', anniv: '15 Juillet', contact: '+221 77 332 55 66', memo: ''},
+            { id: 9, type: 'Médecin', nom: 'Dr. Wade Ibrahima', spec: 'Généraliste', etablissement: 'Cabinet Médical Centenaire', secteur: 'Medina', potentiel: 'C', influence: 'Standard', anniv: '08 Septembre', contact: '+221 76 221 00 11', memo: ''},
+            { id: 10, type: 'Médecin', nom: 'Dr. Ba Cheikh', spec: 'Dermatologue', etablissement: 'Hôpital Dantec', secteur: 'Plateau', potentiel: 'A', influence: 'KOL', anniv: '22 Janvier', contact: '+221 77 554 33 22', memo: ''}
         ];
 
         let state = {
@@ -862,67 +911,71 @@
             currentView: 'planning',
             activeWorkingVisitId: null,
             targetPlanningDay: null,
-            
-            clmStats: [
-                { name: "Amoxicilline", openCount: 0, totalDuration: 0 },
-                { name: "Metformine", openCount: 0, totalDuration: 0 }
-            ],
-            trackingDay: {
-                firstReportTime: null,
-                lastReportTime: null,
-                firstGeoloc: null
-            }
+            clmStats: [],
+            trackingDay: { firstReportTime: null, lastReportTime: null, firstGeoloc: null }
         };
 
-        let currentActiveClmIndex = null;
+        let precallSelectedArray = [];
+        let currentActiveClmProductIndex = null;
         let clmTimerInterval = null;
         let clmActiveSlideStartTime = null;
+        let clmLocalDurations = {}; 
         let leafMap = null;
-        let leafCircle = null;
+
+        // Variables de capture du Swipe
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let currentSwipeWrapper = null;
 
         function initCRM() {
-            const cache = localStorage.getItem('atlasta_crm_v3_state');
+            // Changement de clé pour forcer le nettoyage du cache lors du premier lancement avec ce nouveau code
+            const cache = localStorage.getItem('atlasta_crm_v6_state');
             if (cache) { 
                 state = JSON.parse(cache);
-                if(!state.clmStats) {
-                    state.clmStats = [
-                        { name: "Amoxicilline", openCount: 0, totalDuration: 0 },
-                        { name: "Metformine", openCount: 0, totalDuration: 0 }
-                    ];
-                }
-                if(!state.trackingDay) {
-                    state.trackingDay = { firstReportTime: null, lastReportTime: null, firstGeoloc: null };
-                }
+                if(!state.trackingDay) state.trackingDay = { firstReportTime: null, lastReportTime: null, firstGeoloc: null };
             } else { 
                 resetToDefaultState(); 
             }
             
+            if(!state.clmStats) state.clmStats = [];
+            MEDICAMENTS_BASE.forEach(m => {
+                if(!state.clmStats.find(s => s.name === m)) {
+                    state.clmStats.push({ name: m, openCount: 0, totalDuration: 0 });
+                }
+            });
+
             const container = document.getElementById('form-products-checkboxes');
             container.innerHTML = '';
             MEDICAMENTS_BASE.forEach((m, idx) => {
-                container.innerHTML += `<label><input type="checkbox" name="prod" value="${m}" id="chk-mol-${idx}"> 💊 ${m}</label>`;
+                container.innerHTML += `<label><input type="checkbox" name="prod" value="${m}" id="chk-mol-${idx}"> ${m}</label>`;
+            });
+
+            // Permet d'annuler tous les swipes en cliquant n'importe où
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.swipe-btn')) {
+                    document.querySelectorAll('.swipe-wrapper .card').forEach(card => {
+                        card.style.transform = 'translateX(0px)';
+                    });
+                }
             });
 
             updateNetworkStatus();
-            window.addEventListener('online', updateNetworkStatus);
-            window.addEventListener('offline', updateNetworkStatus);
-
             syncUI();
         }
 
         function updateNetworkStatus() {
             const netBar = document.getElementById('network-bar');
             if(navigator.onLine) {
-                netBar.innerText = "✓ Mode en ligne — Base synchronisée avec le serveur";
+                netBar.innerText = "Mode en ligne — Base synchronisée avec le serveur local Atlasta Cloud";
                 netBar.classList.add('online');
             } else {
-                netBar.innerText = "Mode hors ligne — Données mémorisées localement";
+                netBar.innerText = "Mode hors ligne — Données mémorisées localement sur l'appareil";
                 netBar.classList.remove('online');
             }
         }
 
         function saveCRMState() {
-            localStorage.setItem('atlasta_crm_v3_state', JSON.stringify(state));
+            localStorage.setItem('atlasta_crm_v6_state', JSON.stringify(state));
             updateDashboardCalculations();
         }
 
@@ -930,27 +983,23 @@
             state.prospects = JSON.parse(JSON.stringify(PROSPECTS_INITIALS));
             state.activities = { J1: 'Terrain', J2: 'Terrain', J3: 'Terrain', J4: 'Terrain', J5: 'Terrain' };
             
-            state.planning.J1 = state.prospects.slice(0, 5).map((p, idx) => ({
+            state.planning.J1 = state.prospects.slice(0, 4).map((p, idx) => ({
                 id: 100 + idx, prospectId: p.id, status: 'completed',
-                report: { mode: 'Solo', products: [MEDICAMENTS_BASE[idx], MEDICAMENTS_BASE[(idx+4)%10]], objection: 'Aucune', demands: 'Remise d\'échantillons de départ' }
+                report: { mode: 'Simple', products: [MEDICAMENTS_BASE[idx]], climat: 'Favorable', memo: 'Rien à signaler.', timestamp: '09:15', geoloc: { latitude: 14.6934, longitude: -17.4479 }, gpsValid: true }
             }));
 
-            state.planning.J2 = state.prospects.slice(5, 10).map((p, idx) => ({ id: 200 + idx, prospectId: p.id, status: 'planned', report: null }));
-            state.planning.J3 = state.prospects.slice(10, 15).map((p, idx) => ({ id: 300 + idx, prospectId: p.id, status: 'planned', report: null }));
-            state.planning.J4 = []; 
-            state.planning.J5 = [];
+            state.planning.J2 = state.prospects.slice(4, 9).map((p, idx) => ({ id: 200 + idx, prospectId: p.id, status: 'planned', report: null }));
+            state.planning.J3 = state.prospects.slice(2, 6).map((p, idx) => ({ id: 300 + idx, prospectId: p.id, status: 'planned', report: null }));
+            state.planning.J4 = []; state.planning.J5 = [];
 
-            state.clmStats = [
-                { name: "Amoxicilline", openCount: 0, totalDuration: 0 },
-                { name: "Metformine", openCount: 0, totalDuration: 0 }
-            ];
-            state.trackingDay = { firstReportTime: null, lastReportTime: null, firstGeoloc: null };
+            state.clmStats = MEDICAMENTS_BASE.map(m => ({ name: m, openCount: 1, totalDuration: 45 }));
+            state.trackingDay = { firstReportTime: '09:15', lastReportTime: '11:40', firstGeoloc: { latitude: 14.6934, longitude: -17.4479 } };
             
             saveCRMState();
         }
 
         function triggerResetApp() {
-            if (confirm("Confirmez-vous la purge complète de l'application Atlasta ?")) {
+            if (confirm("Confirmez-vous la réinitialisation d'usine d'Atlasta ?")) {
                 resetToDefaultState();
                 state.currentSelectedDay = 'J2'; state.currentView = 'planning';
                 if(leafMap) { leafMap.remove(); leafMap = null; }
@@ -958,7 +1007,6 @@
             }
         }
 
-        // CORRECTION MAJEURE : MASQUAGE DYNAMIQUE EXIGÉ ET RE-CALCUL DE LA CARTE LEAFLET
         function changeView(viewTarget) {
             state.currentView = viewTarget;
             document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
@@ -966,23 +1014,20 @@
             document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
             document.getElementById(`view-${viewTarget}`).classList.add('active');
 
-            const daySelectorBar = document.getElementById('time-selector-container');
-            const macroActionsBar = document.getElementById('macro-actions-container');
+            const dayBar = document.getElementById('time-selector-container');
+            const macroBar = document.getElementById('macro-actions-container');
 
             if (viewTarget === 'planning') {
-                daySelectorBar.style.display = 'block';
-                macroActionsBar.style.display = 'flex';
+                dayBar.style.display = 'block'; macroBar.style.display = 'flex';
                 renderPlanningView();
             } else {
-                // Masquage total requis pour le Dashboard, Répertoire et Réglages
-                daySelectorBar.style.display = 'none';
-                macroActionsBar.style.display = 'none';
+                dayBar.style.display = 'none'; macroBar.style.display = 'none';
+                document.getElementById('celebration-zone').style.display = 'none';
             }
 
             if (viewTarget === 'directory') renderDirectoryView();
             if (viewTarget === 'dashboard') {
                 updateDashboardCalculations();
-                // Forcer Leaflet à recalculer sa taille car le conteneur vient de passer en display block
                 setTimeout(() => { if(leafMap) leafMap.invalidateSize(); }, 200);
             }
         }
@@ -1008,315 +1053,482 @@
             renderPlanningView();
         }
 
-        // ==================== LOGIQUE ET INTERACTION DU MODULE CLM ====================
-        function launchCLMViewer() {
-            closeModal('modal-prospect-action');
+        // ==================== SWIPE FLUIDE (FERMETURE FACILE) ====================
+        
+        function handleTouchStart(e, wrapperEl) {
+            if (state.currentSelectedDay !== 'J2' || state.activities.J2 === 'Clôturée') return;
+            const card = wrapperEl.querySelector('.card');
+            if (card.classList.contains('state-completed') || card.classList.contains('state-absent')) return;
+
+            // Referme toutes les autres cartes ouvertes
+            document.querySelectorAll('.swipe-wrapper .card').forEach(c => {
+                if (c !== card) c.style.transform = 'translateX(0px)';
+            });
+
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            currentSwipeWrapper = wrapperEl;
+        }
+
+        function handleTouchMove(e) {
+            if (!currentSwipeWrapper) return;
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            
+            const diffX = touchX - touchStartX;
+            const diffY = touchY - touchStartY;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                e.preventDefault();
+                const card = currentSwipeWrapper.querySelector('.card');
+                
+                if (diffX < -20) { 
+                    card.style.transform = 'translateX(-140px)'; 
+                } else if (diffX > 20) {
+                    // Si on swipe vers la droite (même pour annuler), on referme doucement
+                    card.style.transform = 'translateX(0px)';
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            currentSwipeWrapper = null;
+        }
+
+        function resetCardSwipe(btnElement) {
+            const wrapper = btnElement.closest('.swipe-wrapper');
+            if (wrapper) {
+                const card = wrapper.querySelector('.card');
+                card.style.transform = 'translateX(0px)';
+            }
+        }
+
+        // ==================== PARCOURS E-ADV ====================
+        
+        function openPreCallModal(visitId) {
+            state.activeWorkingVisitId = visitId;
+            precallSelectedArray = [];
+            renderPreCallList();
+            document.getElementById('modal-pre-call-clm').style.display = 'flex';
+        }
+
+        function renderPreCallList() {
+            const container = document.getElementById('pre-call-list');
+            container.innerHTML = '';
+            
+            CLM_PRODUCTS_DATA.forEach(prod => {
+                const index = precallSelectedArray.indexOf(prod.name);
+                const badge = index !== -1 ? `<span class="badge" style="background:var(--accent);color:white;font-size:0.75rem;padding:2px 6px;border-radius:10px;">${index + 1}</span>` : '';
+                const isChecked = index !== -1 ? 'checked' : '';
+                container.innerHTML += `
+                    <label style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid var(--border); cursor:pointer;">
+                        <span style="font-size:0.85rem; font-weight:700; color:var(--dark);">
+                            <input type="checkbox" style="margin-right:10px; transform:scale(1.1);" onchange="togglePreCallProduct('${prod.name}')" ${isChecked}> 
+                            ${prod.name}
+                        </span>
+                        ${badge}
+                    </label>
+                `;
+            });
+        }
+
+        function togglePreCallProduct(name) {
+            const idx = precallSelectedArray.indexOf(name);
+            if(idx !== -1) { precallSelectedArray.splice(idx, 1); } 
+            else {
+                if(precallSelectedArray.length >= 5) { alert("Maximum 5 molécules sélectionnées."); return; }
+                precallSelectedArray.push(name);
+            }
+            renderPreCallList();
+        }
+
+        function launchCLMViewerAfterPreCall() {
+            if(precallSelectedArray.length === 0) { alert("Sélectionnez au moins une molécule pour engager le Call."); return; }
+            closeModal('modal-pre-call-clm');
+            
             const visit = state.planning.J2.find(v => v.id === state.activeWorkingVisitId);
             const p = state.prospects.find(pro => pro.id === visit.prospectId);
             
-            document.getElementById('clm-prospect-context').innerText = `Présentation : ${p.nom}`;
-            document.getElementById('modal-clm-viewer').style.display = 'flex';
+            document.getElementById('clm-prospect-context').innerText = `Detailing : ${p.nom}`;
             
+            const tabsContainer = document.getElementById('clm-tabs-container');
+            tabsContainer.innerHTML = precallSelectedArray.map((prodName, idx) => {
+                return `<button class="clm-tab-btn" id="btn-clm-prod${idx}" onclick="switchCLMProduct(${idx})">${prodName}</button>`;
+            }).join('');
+
+            clmLocalDurations = {};
+            precallSelectedArray.forEach(m => clmLocalDurations[m] = 0);
+
+            document.getElementById('modal-clm-viewer').style.display = 'flex';
             switchCLMProduct(0);
             
             let elapsedSeconds = 0;
             clmTimerInterval = setInterval(() => {
                 elapsedSeconds++;
-                document.getElementById('clm-timer-display').innerText = `⏱️ Durée : ${elapsedSeconds}s`;
+                document.getElementById('clm-timer-display').innerText = `Temps : ${elapsedSeconds}s`;
             }, 1000);
         }
 
         function switchCLMProduct(index) {
             const now = Date.now();
-            if(currentActiveClmIndex !== null) {
-                const duration = Math.round((now - clmActiveSlideStartTime) / 1000);
-                state.clmStats[currentActiveClmIndex].totalDuration += duration;
+            
+            if(currentActiveClmProductIndex !== null) {
+                const prevName = precallSelectedArray[currentActiveClmProductIndex];
+                const diff = Math.round((now - clmActiveSlideStartTime) / 1000);
+                clmLocalDurations[prevName] += diff;
             }
             
-            currentActiveClmIndex = index;
+            currentActiveClmProductIndex = index;
             clmActiveSlideStartTime = now;
-            state.clmStats[index].openCount++;
+            
+            const currentName = precallSelectedArray[index];
             
             document.querySelectorAll('.clm-tab-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`btn-clm-prod${index}`).classList.add('active');
             
-            document.getElementById('clm-slide-content').innerHTML = `
-                <div class="clm-product-title">${CLM_PRODUCTS_DATA[index].name}</div>
-                <div class="clm-product-desc">${CLM_PRODUCTS_DATA[index].content}</div>
-                <small style="color:var(--gray-text); display:block; margin-top:15px; font-style:italic;">Défiler vers le haut/bas pour lire la fiche</small>
-            `;
-        }
-
-        function closeCLMViewer() {
-            const now = Date.now();
-            if(currentActiveClmIndex !== null) {
-                const duration = Math.round((now - clmActiveSlideStartTime) / 1000);
-                state.clmStats[currentActiveClmIndex].totalDuration += duration;
+            const prodData = CLM_PRODUCTS_DATA.find(p => p.name === currentName);
+            const slider = document.getElementById('clm-slider-content');
+            
+            if(prodData && prodData.slides) {
+                slider.innerHTML = prodData.slides.map(slide => `
+                    <div class="clm-slide-item">
+                        <div class="clm-product-title">${slide.title}</div>
+                        <div class="clm-product-desc">${slide.desc}</div>
+                    </div>
+                `).join('');
             }
-            
-            currentActiveClmIndex = null;
-            clearInterval(clmTimerInterval);
-            
-            document.getElementById('modal-clm-viewer').style.display = 'none';
-            saveCRMState();
-            
-            document.getElementById('modal-prospect-action').style.display = 'flex';
+            slider.scrollLeft = 0;
         }
 
-        // ==================== GEOLOCALISATION ASYNCHRONE ET SÉCURISÉE ====================
-        function getDelegateCoordinates() {
-            return new Promise((resolve) => {
-                if (!navigator.geolocation) {
-                    return resolve(null);
-                }
-                
-                const geoTimeout = setTimeout(() => {
-                    resolve(null);
-                }, 5000);
+        function abortCLMReviewMode() {
+            if(confirm("Quitter le mode Révision ? Les compteurs de cette session d'entraînement seront effacés.")) {
+                clearInterval(clmTimerInterval);
+                currentActiveClmProductIndex = null;
+                document.getElementById('modal-clm-viewer').style.display = 'none';
+            }
+        }
 
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        clearTimeout(geoTimeout);
-                        resolve({
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude
-                        });
-                    },
-                    (error) => {
-                        clearTimeout(geoTimeout);
-                        resolve(null);
-                    },
-                    { enableHighAccuracy: true, timeout: 4500, maximumAge: 0 }
-                );
+        function commitCLMToVisitReport() {
+            const now = Date.now();
+            if(currentActiveClmProductIndex !== null) {
+                const currentName = precallSelectedArray[currentActiveClmProductIndex];
+                const diff = Math.round((now - clmActiveSlideStartTime) / 1000);
+                clmLocalDurations[currentName] += diff;
+            }
+
+            clearInterval(clmTimerInterval);
+            currentActiveClmProductIndex = null;
+            document.getElementById('modal-clm-viewer').style.display = 'none';
+
+            precallSelectedArray.forEach(m => {
+                const statObj = state.clmStats.find(s => s.name === m);
+                if(statObj) {
+                    statObj.openCount++;
+                    statObj.totalDuration += clmLocalDurations[m];
+                }
+            });
+
+            document.getElementById('form-visit-report').reset();
+            document.getElementById('form-report-visit-id').value = state.activeWorkingVisitId;
+            
+            const checkboxes = document.querySelectorAll('input[name="prod"]');
+            checkboxes.forEach(chk => {
+                chk.checked = precallSelectedArray.includes(chk.value);
+            });
+
+            setClimatValue('Favorable');
+            document.getElementById('modal-visit-report').style.display = 'flex';
+        }
+
+        function setClimatValue(val) {
+            document.getElementById('form-report-climat').value = val;
+            document.querySelectorAll('.climat-option').forEach(opt => {
+                if(opt.getAttribute('data-val') === val) opt.classList.add('active');
+                else opt.classList.remove('active');
             });
         }
 
-        // CORRECTION DE L'INITIALISATION DE LA CARTE LEAFLET SANS BLOCAGE
-        function initOrRefreshLeafletMap() {
-            if(!state.trackingDay.firstGeoloc) return;
-            
-            const lat = state.trackingDay.firstGeoloc.latitude;
-            const lng = state.trackingDay.firstGeoloc.longitude;
-            
-            const fallbackEl = document.getElementById('map-fallback');
-            if (fallbackEl) fallbackEl.style.display = 'none';
+        // ==================== SOUMISSION DU CRV AVEC TIMEOUT GPS 5s ====================
+        
+        async function submitVisitReport(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('btn-submit-report-form');
+            submitBtn.innerText = "Enregistrement...";
+            submitBtn.disabled = true;
 
-            const mapDiv = document.getElementById('map-container');
-            // S'assurer que le conteneur a du contenu HTML propre pour réinitialiser si Leaflet a planté
-            if (mapDiv.innerHTML.includes('map-placeholder')) {
-                mapDiv.innerHTML = '';
-            }
+            const visitId = parseInt(document.getElementById('form-report-visit-id').value);
+            const mode = document.getElementById('form-report-mode').value;
+            const climat = document.getElementById('form-report-climat').value;
+            const memoText = document.getElementById('form-report-memo-flash').value;
+            
+            const selectedProducts = [];
+            document.querySelectorAll('input[name="prod"]:checked').forEach(chk => selectedProducts.push(chk.value));
 
-            if (!leafMap) {
-                leafMap = L.map('map-container', { attributionControl: false, zoomControl: false }).setView([lat, lng], 14);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafMap);
+            // Coordonnées par défaut sur Dakar (Fallback)
+            let coords = { latitude: 14.6934, longitude: -17.4479 };
+            let gpsValid = true;
+
+            // Fixation du Timeout à 5 secondes pour laisser l'antenne chercher
+            if (navigator.geolocation) {
+                try {
+                    const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout:5000, enableHighAccuracy: false}));
+                    coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                } catch(err) { 
+                    console.log("Timeout ou refus GPS de 5s, utilisation fallback."); 
+                    gpsValid = false; // Flag pour l'affichage visuel "Echec GPS"
+                }
             } else {
-                leafMap.setView([lat, lng], 14);
+                gpsValid = false;
             }
 
-            if (leafCircle) { leafMap.removeLayer(leafCircle); }
+            const now = new Date();
+            const timestampStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-            leafCircle = L.circle([lat, lng], {
-                color: '#2563eb',
-                fillColor: '#3b82f6',
-                fillOpacity: 0.25,
-                radius: 500
-            }).addTo(leafMap);
-            
-            // Forcer le rafraîchissement des tuiles graphiques
-            leafMap.invalidateSize();
+            if (!state.trackingDay.firstReportTime || state.trackingDay.firstReportTime === '--:--') {
+                state.trackingDay.firstReportTime = timestampStr;
+                state.trackingDay.firstGeoloc = coords; 
+            }
+            state.trackingDay.lastReportTime = timestampStr; 
+
+            const visit = state.planning.J2.find(v => v.id === visitId);
+            visit.status = 'completed';
+            visit.report = { mode, products: selectedProducts, climat, memo: memoText, timestamp: timestampStr, geoloc: coords, gpsValid };
+
+            const p = state.prospects.find(pro => pro.id === visit.prospectId);
+            if(p && memoText) p.memo = memoText;
+
+            saveCRMState(); 
+            submitBtn.innerText = "Valider le CRV"; submitBtn.disabled = false;
+            closeModal('modal-visit-report'); 
+            renderPlanningView();
         }
+
+        // ==================== UNIFIED : PLANIFICATION / RELANCE / ABSENT ====================
+        
+        function triggerAbsentFromSwipe(btn) {
+            resetCardSwipe(btn);
+            const wrapper = btn.closest('.swipe-wrapper');
+            const visitId = parseInt(wrapper.getAttribute('data-visit-id'));
+            const visit = state.planning.J2.find(v => v.id === visitId);
+            if(visit) {
+                visit.status = 'absent';
+                saveCRMState(); renderPlanningView();
+            }
+        }
+
+        // Ouvre la modale pour Planifier depuis n'importe où
+        function openPlanVisitModal(sourceId, isVisit) {
+            document.getElementById('form-plan-source-id').value = sourceId;
+            document.getElementById('form-plan-is-visit').value = isVisit ? 'true' : 'false';
+            document.getElementById('modal-plan-visit').style.display = 'flex';
+        }
+
+        function triggerPlanVisitFromSwipe(btn) {
+            resetCardSwipe(btn);
+            const wrapper = btn.closest('.swipe-wrapper');
+            const visitId = parseInt(wrapper.getAttribute('data-visit-id'));
+            openPlanVisitModal(visitId, true);
+        }
+
+        // Exécute la planification dans le jour ciblé (J2 à J5)
+        function execPlanVisit() {
+            const sourceId = parseInt(document.getElementById('form-plan-source-id').value);
+            const isVisit = document.getElementById('form-plan-is-visit').value === 'true';
+            const targetDay = document.getElementById('form-plan-target-day').value;
+            
+            let prospectId = null;
+
+            if (isVisit) {
+                // Recherche de la visite source
+                let foundVisit = null;
+                let sourceDay = null;
+                for (let day of ['J1', 'J2', 'J3', 'J4', 'J5']) {
+                    const idx = state.planning[day].findIndex(v => v.id === sourceId);
+                    if (idx !== -1) {
+                        foundVisit = state.planning[day][idx];
+                        sourceDay = day;
+                        break;
+                    }
+                }
+                if (foundVisit) {
+                    prospectId = foundVisit.prospectId;
+                    // Si on reporte depuis J2, on nettoie J2
+                    if (sourceDay === 'J2' && state.currentSelectedDay === 'J2') {
+                        state.planning.J2 = state.planning.J2.filter(v => v.id !== sourceId);
+                    }
+                }
+            } else {
+                prospectId = sourceId; // Appel depuis le répertoire
+            }
+
+            if (prospectId) {
+                state.planning[targetDay].push({ id: Date.now(), prospectId, status: 'planned', isPostponedReceiver: isVisit, report: null });
+                saveCRMState(); 
+                closeModal('modal-plan-visit'); 
+                
+                if (state.currentView === 'planning') renderPlanningView();
+                else if (state.currentView === 'directory') renderDirectoryView();
+            }
+        }
+
+        function openDirectMemoModal(prospectId) {
+            const p = state.prospects.find(pro => pro.id === prospectId);
+            if(!p) return;
+            state.activeWorkingVisitId = prospectId; 
+            document.getElementById('view-prospect-name').innerText = p.nom;
+            document.getElementById('view-prospect-details-container').innerHTML = `
+                <div class="prospect-detail-row"><strong>Spécialité :</strong> <span>${p.spec}</span></div>
+                <div class="prospect-detail-row"><strong>Établissement :</strong> <span>${p.etablissement}</span></div>
+                <div class="prospect-detail-row"><strong>Secteur :</strong> <span>${p.secteur}</span></div>
+                <div class="prospect-detail-row"><strong>Potentiel :</strong> <span>Classe ${p.potentiel}</span></div>
+            `;
+            document.getElementById('view-prospect-memo-field').value = p.memo || '';
+            document.getElementById('modal-prospect-view').style.display = 'flex';
+        }
+
+        function saveDirectProspectMemo() {
+            const p = state.prospects.find(pro => pro.id === state.activeWorkingVisitId);
+            if(p) {
+                p.memo = document.getElementById('view-prospect-memo-field').value;
+                saveCRMState(); closeModal('modal-prospect-view'); 
+                if (state.currentView === 'planning') renderPlanningView();
+            }
+        }
+
+        // ==================== RENDU DES VUES ====================
 
         function renderPlanningView() {
             const day = state.currentSelectedDay;
             const macroContainer = document.getElementById('macro-actions-container');
             const listContainer = document.getElementById('planning-list');
-            listContainer.innerHTML = '';
+            const celebZone = document.getElementById('celebration-zone');
             
+            listContainer.innerHTML = '';
+            celebZone.style.display = 'none';
+
+            const dayVisits = state.planning[day] || [];
+            const birthdayHCPs = dayVisits.map(v => state.prospects.find(p => p.id === v.prospectId)).filter(p => p && p.anniv === '22 Mai');
+            
+            if(birthdayHCPs.length > 0 && day === 'J2') {
+                celebZone.innerHTML = `
+                    <div class="celebration-banner">
+                        <strong>Célébration du jour :</strong> Anniversaire aujourd'hui pour ${birthdayHCPs.map(h => h.nom).join(', ')}. Pensez à le souhaiter !
+                    </div>
+                `;
+                celebZone.style.display = 'block';
+            }
+
             if (day === 'J2') {
                 const isDayClosed = state.activities[day] === 'Clôturée';
                 macroContainer.style.display = 'flex';
                 macroContainer.innerHTML = `
-                    <button class="btn-macro btn-macro-primary" onclick="openHorsPlanningModal()" ${isDayClosed?'disabled':''}>➕ Visite Non Planifiée</button>
-                    <button class="btn-macro" onclick="toggleDayOffTerrain()" id="macro-offterrain-btn" ${isDayClosed?'disabled':''}>🏢 Journée Hors Terrain</button>
-                    <button class="btn-macro btn-macro-success" onclick="closeWholeDay()" id="macro-close-btn">🏁 Clôturer la Journée</button>
+                    <button class="btn-macro btn-macro-primary" onclick="openHorsPlanningModal()" ${isDayClosed?'disabled':''}>Ajouter un Call Ad-hoc</button>
+                    <button class="btn-macro" onclick="toggleDayOffTerrain()" id="macro-offterrain-btn" ${isDayClosed?'disabled':''}>Journée Hors Terrain</button>
+                    <button class="btn-macro btn-macro-success" onclick="closeWholeDay()" id="macro-close-btn">Clôturer le Call Plan</button>
                 `;
-                if (state.activities[day] !== 'Terrain' && state.activities[day] !== 'Clôturée') {
-                    document.getElementById('macro-offterrain-btn').style.background = 'var(--warning-light)';
-                    document.getElementById('macro-offterrain-btn').innerText = `🏢 Actif: ${state.activities[day]}`;
-                }
                 if(isDayClosed){
-                    document.getElementById('macro-close-btn').innerText = "✓ Clôturée";
+                    document.getElementById('macro-close-btn').innerText = "Call Plan Clôturé";
                     document.getElementById('macro-close-btn').disabled = true;
                 }
-            } else if (day === 'J3') {
-                macroContainer.style.display = 'flex';
-                macroContainer.innerHTML = `<button class="btn-macro btn-macro-primary" style="width:100%;" onclick="alert('Modification autorisée du planning de Mercredi (J3).')">✏️ Modifier le planning</button>`;
             } else if (day === 'J4' || day === 'J5') {
                 macroContainer.style.display = 'flex';
-                macroContainer.innerHTML = `
-                    <button class="btn-macro btn-macro-primary" style="width:100%;" onclick="openManualPlanningSelector('${day}')">📅 Créer / Configurer le Planning</button>
-                `;
+                macroContainer.innerHTML = `<button class="btn-macro btn-macro-primary" style="width:100%;" onclick="openManualPlanningSelector('${day}')">Bâtir le Call Plan</button>`;
             } else { macroContainer.style.display = 'none'; }
 
-            const currentVisits = state.planning[day];
-            if (currentVisits.length === 0) {
-                listContainer.innerHTML = `<div style="text-align:center; padding:35px; color:var(--gray-text); font-size:0.8rem; font-weight:600;">Aucune cible chargée. Cliquez sur le bouton ci-dessus pour bâtir votre liste manuellement.</div>`;
+            if (dayVisits.length === 0) {
+                listContainer.innerHTML = `<div style="text-align:center; padding:35px; color:var(--gray-text); font-size:0.8rem; font-weight:600;">Aucun HCP planifié pour cette journée.</div>`;
                 return;
             }
 
-            currentVisits.forEach(visit => {
+            dayVisits.forEach(visit => {
                 const p = state.prospects.find(pro => pro.id === visit.prospectId);
                 if(!p) return;
 
-                let cardStateClass = 'state-planned'; let statusTextHTML = '';
-                
+                let cardStateClass = 'state-planned'; 
+                let statusTextHTML = '';
+                let isActionDisabled = false;
+
+                // Affichage optionnel du Badge GPS Échoué si la donnée a été flagguée
+                const gpsBadge = (visit.report && visit.report.gpsValid === false) ? '<span style="display:inline-block; margin-left:6px; font-size:0.6rem; background:var(--danger); color:white; padding:1px 4px; border-radius:3px; font-weight:bold;">Échec GPS</span>' : '';
+
                 if (day === 'J1') {
                     cardStateClass = 'state-completed';
-                    statusTextHTML = `<span style="color:var(--success)">✓ Clôturé (${visit.report?.mode}) - Molécules : ${visit.report?.products?.join(', ')}</span>`;
+                    statusTextHTML = `<span style="color:var(--success)">✓ CRV Validé (${visit.report?.mode}) - ${visit.report?.products?.join(', ')}</span>${gpsBadge}`;
+                    isActionDisabled = true;
                 } else if (day === 'J2') {
                     if (state.activities.J2 === 'Clôturée') {
-                        cardStateClass = 'state-completed'; statusTextHTML = `<span style="color:var(--gray-text)">🔒 Journée Clôturée</span>`;
+                        cardStateClass = 'state-completed'; statusTextHTML = `<span style="color:var(--gray-text)">🔒 Call Plan Clôturé</span>`; isActionDisabled = true;
                     } else if (visit.status === 'completed') {
-                        cardStateClass = 'state-completed'; statusTextHTML = `<span style="color:var(--success)">✓ Rapport validé (${visit.report?.mode})</span>`;
+                        cardStateClass = 'state-completed'; statusTextHTML = `<span style="color:var(--success)">✓ CRV Validé (${visit.report?.mode})</span>${gpsBadge}`; isActionDisabled = true;
                     } else if (visit.status === 'absent') {
-                        cardStateClass = 'state-absent'; statusTextHTML = `<span style="color:var(--danger)">❌ Médecin Absent</span>`;
+                        cardStateClass = 'state-absent'; statusTextHTML = `<span style="color:var(--danger)">✗ HCP Signalé Absent</span>`; isActionDisabled = true;
                     } else if (visit.isPostponedReceiver) {
-                        cardStateClass = 'state-postponed'; statusTextHTML = `<span style="color:var(--warning)">⏳ Reporté de J2 (En attente)</span>`;
+                        cardStateClass = 'state-postponed'; statusTextHTML = `<span style="color:var(--warning)">Call reporté de la session précédente</span>`;
                     } else {
-                        cardStateClass = 'state-planned'; statusTextHTML = `<span style="color:var(--gray-text)">⏳ En attente de traitement (Cliquer)</span>`;
+                        cardStateClass = 'state-planned'; statusTextHTML = `<span style="color:var(--gray-text)">En attente d'interaction</span>`;
                     }
-                } else { 
-                    if (visit.isPostponedReceiver) {
-                        cardStateClass = 'state-postponed'; statusTextHTML = `<span style="color:var(--warning)">📅 Reporté de J2</span>`;
-                    } else {
-                        cardStateClass = 'state-future'; statusTextHTML = `🔒 Journée bloquée`; 
-                    }
+                } else {
+                    cardStateClass = 'state-future'; statusTextHTML = `Journée verrouillée`; isActionDisabled = true;
                 }
 
-                const influenceBadge = p.influence !== 'Standard' ? `<span class="badge badge-${p.influence.toLowerCase()}">${p.influence}</span>` : '';
-                const reportBadge = visit.isPostponedReceiver ? `<span class="badge badge-rep">Reporté</span>` : '';
-                
-                const cardHTML = `
-                    <div class="card ${cardStateClass}" onclick="handleProspectCardClick('${day}', ${visit.id}, '${visit.status}')">
-                        <div class="card-header">
-                            <span class="card-title">${p.nom} ${influenceBadge} ${reportBadge}</span>
-                            <span class="badge badge-pot">${p.potentiel}</span>
+                const infBadge = p.influence !== 'Standard' ? `<span class="badge badge-${p.influence.toLowerCase()}">${p.influence}</span>` : '';
+                const repBadge = visit.isPostponedReceiver ? `<span class="badge badge-rep">Reporté</span>` : '';
+
+                let cardContentHTML = `
+                    <div class="card ${cardStateClass}">
+                        <div class="card-body-layout">
+                            <div class="card-info-side">
+                                <div class="card-header">
+                                    <span class="card-title">${p.nom} ${infBadge} ${repBadge}</span>
+                                    <span class="badge badge-pot">${p.potentiel}</span>
+                                </div>
+                                <div class="card-meta">${p.type} - ${p.spec} | Etablissement ${p.etablissement}</div>
+                                <div class="status-indicator">${statusTextHTML}</div>
+                            </div>
+                            ${day === 'J2' ? `<button class="btn-action-trigger" onclick="openPreCallModal(${visit.id})" ${isActionDisabled?'disabled':''}>Engager Call</button>` : ''}
                         </div>
-                        <div class="card-meta">${p.type} - ${p.spec} | 🏥 ${p.etablissement}</div>
-                        <div class="status-indicator">${statusTextHTML}</div>
+                        
+                        ${day !== 'J2' ? `
+                            <div class="card-actions-mini">
+                                <button class="btn-mini" onclick="openPlanVisitModal(${visit.id}, true)">Planifier Relance</button>
+                                <button class="btn-mini btn-mini-primary" onclick="openDirectMemoModal(${p.id})">Mémo Flash</button>
+                            </div>
+                        ` : `
+                            <div class="card-actions-mini">
+                                <button class="btn-mini btn-mini-primary" onclick="openDirectMemoModal(${p.id})">Mémo Flash</button>
+                            </div>
+                        `}
                     </div>
                 `;
-                listContainer.appendChild(createHTMLElement(cardHTML));
+
+                if (day === 'J2') {
+                    // Conteneur Swipe (strictement vers la gauche pour découvrir les boutons à droite)
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'swipe-wrapper';
+                    wrapper.setAttribute('data-visit-id', visit.id);
+                    wrapper.setAttribute('ontouchstart', 'handleTouchStart(event, this)');
+                    wrapper.setAttribute('ontouchmove', 'handleTouchMove(event)');
+                    wrapper.setAttribute('ontouchend', 'handleTouchEnd(event)');
+
+                    wrapper.innerHTML = `
+                        <div class="swipe-actions-right">
+                            <button class="swipe-btn" style="background:var(--warning);" onclick="triggerPlanVisitFromSwipe(this)">Planifier</button>
+                            <button class="swipe-btn" style="background:var(--danger);" onclick="triggerAbsentFromSwipe(this)">Absent</button>
+                        </div>
+                    `;
+                    wrapper.appendChild(createHTMLElement(cardContentHTML));
+                    listContainer.appendChild(wrapper);
+                } else {
+                    listContainer.appendChild(createHTMLElement(cardContentHTML));
+                }
             });
         }
 
-        function handleProspectCardClick(day, visitId, status) {
-            if (day !== 'J2' || state.activities.J2 === 'Clôturée' || status === 'completed' || status === 'absent') { return; }
-            state.activeWorkingVisitId = visitId;
-            const visit = state.planning.J2.find(v => v.id === visitId);
-            const p = state.prospects.find(pro => pro.id === visit.prospectId);
-            
-            document.getElementById('action-modal-name').innerText = p.nom;
-            document.getElementById('action-modal-info-block').innerHTML = `${p.spec} — ${p.etablissement} | Secteur : ${p.secteur}`;
-            document.getElementById('modal-prospect-action').style.display = 'flex';
-        }
-
-        function routeToVisitReport() {
-            closeModal('modal-prospect-action');
-            document.getElementById('form-visit-report').reset();
-            document.getElementById('form-report-visit-id').value = state.activeWorkingVisitId;
-            document.getElementById('modal-visit-report').style.display = 'flex';
-        }
-
-        async function submitVisitReport(e) {
-            e.preventDefault();
-            const submitBtn = document.getElementById('btn-submit-report-form');
-            const originalText = submitBtn.innerText;
-            
-            submitBtn.innerText = "⏳ Fixation GPS en cours...";
-            submitBtn.disabled = true;
-
-            const visitId = parseInt(document.getElementById('form-report-visit-id').value);
-            const mode = document.getElementById('form-report-mode').value;
-            const objection = document.getElementById('form-report-objection').value;
-            const demands = document.getElementById('form-report-demands').value;
-            
-            const selectedProducts = [];
-            const checkboxes = document.querySelectorAll('input[name="prod"]:checked');
-            checkboxes.forEach(chk => selectedProducts.push(chk.value));
-
-            if(selectedProducts.length === 0) { 
-                alert("Veuillez cocher au moins une molécule présentée."); 
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
-                return; 
-            }
-
-            const coords = await getDelegateCoordinates() || { latitude: 14.6934, longitude: -17.4479 }; // Coordonnées par défaut (Dakar) pour forcer la carte à fonctionner si le GPS échoue en test.
-            
-            const dateObj = new Date();
-            const currentFormattedTime = `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-
-            if (!state.trackingDay.firstReportTime) {
-                state.trackingDay.firstReportTime = currentFormattedTime;
-                state.trackingDay.firstGeoloc = coords; 
-            }
-            state.trackingDay.lastReportTime = currentFormattedTime; 
-
-            const visit = state.planning.J2.find(v => v.id === visitId);
-            visit.status = 'completed';
-            visit.report = { 
-                mode, 
-                products: selectedProducts, 
-                objection, 
-                demands,
-                timestamp: currentFormattedTime,
-                geoloc: coords,
-                isSynced: navigator.onLine
-            };
-
-            saveCRMState(); 
-            
-            submitBtn.innerText = originalText;
-            submitBtn.disabled = false;
-            
-            closeModal('modal-visit-report'); 
-            renderPlanningView();
-        }
-
-        function execMarkAbsent() {
-            const visit = state.planning.J2.find(v => v.id === state.activeWorkingVisitId);
-            visit.status = 'absent';
-            saveCRMState(); closeModal('modal-prospect-action'); renderPlanningView();
-        }
-
-        function routeToPostpone() {
-            closeModal('modal-prospect-action');
-            document.getElementById('form-postpone-visit-id').value = state.activeWorkingVisitId;
-            document.getElementById('modal-postpone-select').style.display = 'flex';
-        }
-
-        function execPostpone() {
-            const visitId = parseInt(document.getElementById('form-postpone-visit-id').value);
-            const targetDay = document.getElementById('form-postpone-target-day').value;
-            const idx = state.planning.J2.findIndex(v => v.id === visitId);
-            
-            if(idx !== -1) {
-                const displacedVisit = state.planning.J2.splice(idx, 1)[0];
-                displacedVisit.status = 'planned';
-                displacedVisit.isPostponedReceiver = true; 
-                state.planning[targetDay].push(displacedVisit);
-                
-                saveCRMState(); closeModal('modal-postpone-select'); renderPlanningView();
-            }
-        }
+        // ==================== FONCTIONNALITÉS MACROS ====================
 
         function openManualPlanningSelector(dayCode) {
             state.targetPlanningDay = dayCode;
-            document.getElementById('planning-selector-title').innerText = `Bâtir le Planning du jour : ${dayCode}`;
-            document.getElementById('planning-search-input').value = '';
-            
+            document.getElementById('planning-selector-title').innerText = `Bâtir le Call Plan : ${dayCode}`;
             const listContainer = document.getElementById('planning-selector-list-container');
             listContainer.innerHTML = '';
             const alreadyPlannedIds = state.planning[dayCode].map(v => v.prospectId);
@@ -1324,76 +1536,54 @@
             state.prospects.forEach(p => {
                 const isChecked = alreadyPlannedIds.includes(p.id) ? 'checked' : '';
                 listContainer.innerHTML += `
-                    <div class="planning-select-item" data-search="${p.nom.toLowerCase()} ${p.spec.toLowerCase()}">
-                        <label>
+                    <div class="planning-select-item" data-search="${p.nom.toLowerCase()}" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #f1f5f9;">
+                        <label style="display:flex; align-items:center; gap:10px; width:100%; cursor:pointer; font-size:0.8rem;">
                             <input type="checkbox" value="${p.id}" name="manual-select-prospect" ${isChecked}>
-                            <div>
-                                <strong>${p.nom}</strong> <small style="color:var(--gray-text)">(${p.spec} - ${p.etablissement})</small>
-                            </div>
+                            <div><strong>${p.nom}</strong> <small style="color:var(--gray-text)">(${p.spec})</small></div>
                         </label>
                     </div>
                 `;
             });
-
             document.getElementById('modal-create-planning-selector').style.display = 'flex';
         }
 
         function filterPlanningSelectorList() {
             const query = document.getElementById('planning-search-input').value.toLowerCase();
-            const items = document.querySelectorAll('.planning-select-item');
-            items.forEach(item => {
+            document.querySelectorAll('.planning-select-item').forEach(item => {
                 const text = item.getAttribute('data-search');
-                if(text.includes(query)) { item.style.display = 'flex'; } else { item.style.display = 'none'; }
+                item.style.display = text.includes(query) ? 'flex' : 'none';
             });
         }
 
         function execSubmitManualPlanning() {
             const dayCode = state.targetPlanningDay;
             const checkedBoxes = document.querySelectorAll('input[name="manual-select-prospect"]:checked');
-            const postponedVisits = state.planning[dayCode].filter(v => v.isPostponedReceiver);
             
             const newVisits = [];
             checkedBoxes.forEach((chk, idx) => {
-                const pId = parseInt(chk.value);
-                if(postponedVisits.some(v => v.prospectId === pId)) return;
-
-                newVisits.push({
-                    id: Date.now() + idx,
-                    prospectId: pId,
-                    status: 'planned',
-                    report: null
-                });
+                newVisits.push({ id: Date.now() + idx, prospectId: parseInt(chk.value), status: 'planned', report: null });
             });
-
-            state.planning[dayCode] = [...postponedVisits, ...newVisits];
-            saveCRMState();
-            closeModal('modal-create-planning-selector');
-            renderPlanningView();
+            state.planning[dayCode] = newVisits;
+            saveCRMState(); closeModal('modal-create-planning-selector'); renderPlanningView();
         }
 
         function toggleDayOffTerrain() {
-            const types = ["Séminaire", "EPU", "Réunion régionale", "Formation Produits", "Absence Justifiée"];
-            const choice = prompt(`Activité hors terrain (1-5) :\n1. ${types[0]}\n2. ${types[1]}\n3. ${types[2]}\n4. ${types[3]}\n5. ${types[4]}`);
-            if(choice >= 1 && choice <= 5) {
-                state.activities.J2 = types[choice - 1];
-                saveCRMState(); renderPlanningView();
-            }
+            const choice = prompt("Activité hors terrain :\n1. Séminaire\n2. EPU\n3. Réunion régionale\n4. Abs Justifiée");
+            const labels = ["Séminaire", "EPU", "Réunion régionale", "Abs Justifiée"];
+            if(choice >= 1 && choice <= 4) { state.activities.J2 = labels[choice - 1]; saveCRMState(); renderPlanningView(); }
         }
 
         function closeWholeDay() {
-            if(confirm("Voulez-vous verrouiller et archiver définitivement la journée active J2 ?")) {
-                state.activities.J2 = 'Clôturée';
-                saveCRMState(); renderPlanningView();
+            if(confirm("Confirmez-vous la clôture définitive de la journée terrain J2 ?")) {
+                state.activities.J2 = 'Clôturée'; saveCRMState(); renderPlanningView();
             }
         }
 
         function openHorsPlanningModal() {
-            const select = document.getElementById('select-hors-planning-prospect');
-            select.innerHTML = '';
+            const select = document.getElementById('select-hors-planning-prospect'); select.innerHTML = '';
             const currentJ2Ids = state.planning.J2.map(v => v.prospectId);
             const available = state.prospects.filter(p => !currentJ2Ids.includes(p.id));
-
-            if(available.length === 0) { select.innerHTML = `<option value="">Aucun prospect disponible</option>`; } 
+            if(available.length === 0) { select.innerHTML = `<option>Aucun praticien disponible</option>`; }
             else { available.forEach(p => select.innerHTML += `<option value="${p.id}">${p.nom} (${p.spec})</option>`); }
             document.getElementById('modal-add-hors-planning').style.display = 'flex';
         }
@@ -1406,164 +1596,105 @@
         }
 
         function renderDirectoryView() {
-            const listContainer = document.getElementById('directory-list');
-            listContainer.innerHTML = '';
-            document.getElementById('dir-count').innerText = `Total : ${state.prospects.length} cibles enregistrées`;
-
+            const listContainer = document.getElementById('directory-list'); listContainer.innerHTML = '';
+            document.getElementById('dir-count').innerText = `Total : ${state.prospects.length} HCPs enregistrés`;
             state.prospects.forEach(p => {
-                const infBadge = p.influence !== 'Standard' ? `<span class="badge badge-${p.influence.toLowerCase()}">${p.influence}</span>` : '';
                 const cardHTML = `
-                    <div class="card" style="border-left: 3px solid var(--accent);" onclick="openProspectDetailSheet(${p.id})">
+                    <div class="card" style="border-left:3px solid var(--accent); margin-bottom:6px;">
                         <div class="card-header">
-                            <span class="card-title" style="color:var(--accent);">${p.nom} ${infBadge}</span>
-                            <span class="badge badge-pot">${p.potentiel}</span>
+                            <span class="card-title" style="color:var(--accent);">${p.nom}</span>
+                            <span class="badge badge-pot">Classe ${p.potentiel}</span>
                         </div>
-                        <div class="card-meta"><b>${p.type}</b> — ${p.spec} | 📍 ${p.secteur}</div>
+                        <div class="card-meta"><b>${p.type}</b> — ${p.spec} | ${p.secteur}</div>
+                        <div class="card-actions-mini">
+                            <button class="btn-mini" onclick="openPlanVisitModal(${p.id}, false)">Planifier Visite</button>
+                            <button class="btn-mini btn-mini-primary" onclick="openDirectMemoModal(${p.id})">Mémo Flash</button>
+                        </div>
                     </div>
                 `;
                 listContainer.appendChild(createHTMLElement(cardHTML));
             });
         }
 
-        function openProspectDetailSheet(prospectId) {
-            const p = state.prospects.find(pro => pro.id === prospectId);
-            if(!p) return;
-            document.getElementById('view-prospect-name').innerText = p.nom;
-            document.getElementById('view-prospect-details-container').innerHTML = `
-                <div class="prospect-detail-row"><strong>Type de Cible :</strong> <span>${p.type}</span></div>
-                <div class="prospect-detail-row"><strong>Spécialité :</strong> <span>${p.spec}</span></div>
-                <div class="prospect-detail-row"><strong>Établissement :</strong> <span>${p.etablissement}</span></div>
-                <div class="prospect-detail-row"><strong>Adresse / Secteur :</strong> <span>${p.secteur}</span></div>
-                <div class="prospect-detail-row"><strong>Potentiel Labo :</strong> <span>Classe ${p.potentiel}</span></div>
-                <div class="prospect-detail-row"><strong>Niveau d'influence :</strong> <span>${p.influence}</span></div>
-                <div class="prospect-detail-row"><strong>Anniversaire :</strong> <span>${p.anniv}</span></div>
-                <div class="prospect-detail-row"><strong>Contact Téléphonique :</strong> <span>${p.contact}</span></div>
-            `;
-            document.getElementById('modal-prospect-view').style.display = 'flex';
-        }
-
-        function openCreateProspectModal() {
-            document.getElementById('form-create-prospect').reset();
-            document.getElementById('modal-create-prospect').style.display = 'flex';
-        }
-
+        function openCreateProspectModal() { document.getElementById('form-create-prospect').reset(); document.getElementById('modal-create-prospect').style.display = 'flex'; }
         function submitCreateProspect(e) {
             e.preventDefault();
-            const newProspect = {
-                id: Date.now(),
-                type: document.getElementById('add-type').value,
-                nom: document.getElementById('add-nom').value,
-                spec: document.getElementById('add-spec').value,
-                etablissement: document.getElementById('add-etab').value,
-                secteur: document.getElementById('add-secteur').value,
-                potentiel: document.getElementById('add-potentiel').value,
-                influence: document.getElementById('add-influence').value,
-                anniv: document.getElementById('add-anniv').value,
-                contact: document.getElementById('add-contact').value
-            };
-            state.prospects.push(newProspect); saveCRMState(); closeModal('modal-create-prospect'); renderDirectoryView();
+            state.prospects.push({
+                id: Date.now(), type: document.getElementById('add-type').value, nom: document.getElementById('add-nom').value,
+                spec: document.getElementById('add-spec').value, etablissement: document.getElementById('add-etab').value,
+                secteur: document.getElementById('add-secteur').value, potentiel: document.getElementById('add-potentiel').value,
+                influence: document.getElementById('add-influence').value, anniv: document.getElementById('add-anniv').value,
+                contact: document.getElementById('add-contact').value, memo: ''
+            });
+            saveCRMState(); closeModal('modal-create-prospect'); renderDirectoryView();
         }
-
         function adaptSpecialtyDropdown() {
             const type = document.getElementById('add-type').value;
             const specInput = document.getElementById('add-spec');
             if(type === 'Pharmacien') specInput.value = 'Officine';
             else if(type === 'Sage-femme') specInput.value = 'Maternité';
-            else if(type === 'Infirmière') specInput.value = 'Soins Généraux';
             else specInput.value = '';
+        }
+
+        function initOrRefreshLeafletMap() {
+            if(!state.trackingDay.firstGeoloc) return;
+            const lat = state.trackingDay.firstGeoloc.latitude;
+            const lng = state.trackingDay.firstGeoloc.longitude;
+            document.getElementById('map-container').innerHTML = '';
+            leafMap = L.map('map-container', { attributionControl: false, zoomControl: false }).setView([lat, lng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(leafMap);
+            L.circle([lat, lng], { color: '#2563eb', radius: 500 }).addTo(leafMap);
         }
 
         function updateDashboardCalculations() {
             document.getElementById('dash-start-time').innerText = state.trackingDay.firstReportTime || '--:--';
             document.getElementById('dash-end-time').innerText = state.trackingDay.lastReportTime || '--:--';
             
-            initOrRefreshLeafletMap();
+            const clmBody = document.getElementById('clm-stats-table-body'); clmBody.innerHTML = '';
+            const activeStats = state.clmStats.filter(s => s.openCount > 0);
+            if(activeStats.length === 0) {
+                clmBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--gray-text);">Aucune statistique de detailing.</td></tr>`;
+            } else {
+                activeStats.forEach(stat => {
+                    const avg = Math.round(stat.totalDuration / stat.openCount);
+                    clmBody.innerHTML += `
+                        <tr style="border-bottom:1px solid #f1f5f9; font-size:0.8rem;">
+                            <td style="padding:6px 0;"><b>${stat.name}</b></td>
+                            <td style="padding:6px 0; text-align:center;">${stat.openCount}</td>
+                            <td style="padding:6px 0; text-align:right; color:var(--accent); font-weight:700;">${avg}s</td>
+                        </tr>
+                    `;
+                });
+            }
 
-            const clmBody = document.getElementById('clm-stats-table-body');
-            clmBody.innerHTML = '';
-            state.clmStats.forEach(stat => {
-                const avg = stat.openCount > 0 ? Math.round(stat.totalDuration / stat.openCount) : 0;
-                clmBody.innerHTML += `
-                    <tr style="border-bottom: 1px solid #f1f5f9; font-size:0.8rem;">
-                        <td style="padding: 6px 0; font-weight:600;">💊 ${stat.name}</td>
-                        <td style="padding: 6px 0; text-align: center; font-weight:700;">${stat.openCount}</td>
-                        <td style="padding: 6px 0; text-align: right; color:var(--accent); font-weight:700;">${avg}s / ouverture</td>
-                    </tr>
-                `;
-            });
-
-            let totalVisitsRealized = 0; let currentDayVisitsDone = 0; let currentDayTotalVisits = 0;
-            let productMetrics = {}; MEDICAMENTS_BASE.forEach(m => productMetrics[m] = 0);
-            
-            let scoredVisits = 0; let requiredVisits = 0;
-            let visitedProspectIds = new Set();
+            let done = 0; let total = 0; let visitedIds = new Set();
+            let metrics = {}; MEDICAMENTS_BASE.forEach(m => metrics[m] = 0);
 
             ['J1', 'J2', 'J3', 'J4', 'J5'].forEach(d => {
-                state.planning[d].forEach(v => {
+                (state.planning[d] || []).forEach(v => {
                     if(v.status === 'completed') {
-                        totalVisitsRealized++;
-                        visitedProspectIds.add(v.prospectId);
-                        if(d === state.currentSelectedDay) currentDayVisitsDone++;
-                        if(v.report && v.report.products) {
-                            v.report.products.forEach(pName => { if(productMetrics[pName] !== undefined) productMetrics[pName]++; });
-                        }
+                        done++; visitedIds.add(v.prospectId);
+                        if(v.report?.products) v.report.products.forEach(m => { if(metrics[m]!==undefined) metrics[m]++; });
                     }
-                    if(d === state.currentSelectedDay) currentDayTotalVisits++;
+                    total++;
                 });
             });
 
-            state.prospects.forEach(p => {
-                let count = 0;
-                ['J1', 'J2', 'J3', 'J4', 'J5'].forEach(d => {
-                    state.planning[d].forEach(v => { if(v.prospectId === p.id && v.status === 'completed') count++; });
-                });
-                let target = p.potentiel === 'A' ? 3 : (p.potentiel === 'B' ? 2 : 1);
-                requiredVisits += target;
-                scoredVisits += Math.min(count, target);
+            document.getElementById('dash-coverage').innerText = `${Math.round((visitedIds.size / state.prospects.length) * 100)}%`;
+            document.getElementById('dash-done-visits').innerText = done;
+            document.getElementById('dash-remaining-visits').innerText = state.prospects.length - visitedIds.size;
+            document.getElementById('dash-day-perf').innerText = '100%';
+
+            const prodList = document.getElementById('dash-products-list'); prodList.innerHTML = '';
+            Object.entries(metrics).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => {
+                if(v>0) prodList.innerHTML += `<li><span>${k}</span><strong>${v} détails</strong></li>`;
             });
-
-            document.getElementById('dash-coverage').innerText = `${Math.round((totalVisitsRealized / state.prospects.length) * 100)}%`;
-            document.getElementById('dash-done-visits').innerText = totalVisitsRealized;
-            document.getElementById('dash-remaining-visits').innerText = state.prospects.length - visitedProspectIds.size;
-            document.getElementById('dash-day-perf').innerText = currentDayTotalVisits > 0 ? `${Math.round((currentDayVisitsDone / currentDayTotalVisits) * 100)}%` : '0%';
-
-            let remainingKOL = 0; let remainingKBL = 0;
-            state.prospects.forEach(p => {
-                if(!visitedProspectIds.has(p.id)) {
-                    if(p.influence === 'KOL') remainingKOL++; if(p.influence === 'KBL') remainingKBL++;
-                }
-            });
-            document.getElementById('dash-rem-kol').innerText = remainingKOL;
-            document.getElementById('dash-rem-kbl').innerText = remainingKBL;
-            
-            const neverVisitedCount = state.prospects.length - visitedProspectIds.size;
-            document.getElementById('dash-never-visited').innerText = `${neverVisitedCount} médecin(s) en attente de premier contact`;
-
-            let freqScore = requiredVisits > 0 ? Math.round((scoredVisits / requiredVisits) * 100) : 100;
-            document.getElementById('dash-frequency-score').innerText = `${freqScore}% de conformité stratégie`;
-
-            const prodListContainer = document.getElementById('dash-products-list');
-            prodListContainer.innerHTML = '';
-            Object.entries(productMetrics).sort((a,b) => b[1] - a[1]).forEach(([name, count]) => {
-                prodListContainer.innerHTML += `<li><span>💊 ${name}</span> <strong>${count} présentations</strong></li>`;
-            });
-
-            let terrainDaysCount = 0; let specialActivityCount = 0;
-            ['J1', 'J2', 'J3', 'J4', 'J5'].forEach(d => {
-                if(state.activities[d] === 'Terrain' || state.activities[d] === 'Clôturée') terrainDaysCount++; else specialActivityCount++;
-            });
-            document.getElementById('dash-ratio-text').innerText = `Rapport : ${terrainDaysCount} jours terrain sur 5 | Activités annexes : ${specialActivityCount}`;
         }
 
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function closeModalOnOuterClick(e, modalId) { if (e.target === document.getElementById(modalId)) closeModal(modalId); }
-        function createHTMLElement(htmlString) { const div = document.createElement('div'); div.innerHTML = htmlString.trim(); return div.firstChild; }
-        
-        function syncUI() { 
-            handleDayTabClick('J2'); 
-            changeView('planning'); 
-            updateDashboardCalculations(); 
-        }
+        function createHTMLElement(html) { const div = document.createElement('div'); div.innerHTML = html.trim(); return div.firstChild; }
+        function syncUI() { handleDayTabClick('J2'); changeView('planning'); }
 
         window.onload = initCRM;
     </script>
